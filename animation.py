@@ -5,8 +5,10 @@ from matplotlib import rc
 
 
 class Animation:
-    def __init__(self, a = 0.25, tf = 10, num_frames = 60):
-        self.a = a
+    def __init__(self, tf = 10, num_frames = 60):
+        self.drone_width = 0.25
+        self.pendu_width = 0.25
+
         self.traj = np.zeros((1,6))
         self.tf = tf
         self.num_frames = num_frames
@@ -21,11 +23,15 @@ class Animation:
 
 
     def plot_quadrotor(self, state, ax: plt.Axes):
-        x, y, theta = state[:3]
-        x_radi = self.a * np.cos(theta)
-        y_radi = self.a * np.sin(theta)
+        x, y, theta, phi = state[:4]
+        x_radi = self.drone_width * np.cos(theta)
+        y_radi = self.drone_width * np.sin(theta)
 
-        return ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
+        lines = []
+        lines += ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
+        lines += ax.plot([x, x - self.pendu_width * np.cos(phi)], [y, y - self.pendu_width * np.sin(phi)], 'r')
+
+        return lines
 
 
     def animate(self):
