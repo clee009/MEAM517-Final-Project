@@ -1,7 +1,7 @@
 import numpy as np
 from math import sin, cos, pi
 from scipy.integrate import solve_ivp
-from .quadrotor import Quadrotor
+from quadrotor import Quadrotor
 import matplotlib.pyplot as plt
 
 def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, use_clf_qp=False):
