@@ -29,7 +29,7 @@ class QuadrotorPendulum(VectorSystem):
     VectorSystem.__init__(self,
         2,                           # Two input (thrust of each rotor).
         8)                           # Eight outputs (xb, yb, thetab, theta1) and its derivatives
-    self._DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
+    # self._DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
 
     self.mb = float(mb)
     self.lb = float(lb)
