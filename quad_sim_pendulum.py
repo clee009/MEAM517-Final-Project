@@ -31,7 +31,7 @@ def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, 
     current_u_real = np.clip(current_u_command, quadrotor.input_min, quadrotor.input_max)
     # Autonomous ODE for constant inputs to work with solve_ivp
     def f(t, x):
-      return quadrotor.continuous_time_full_dynamics(current_x, current_u_real)
+      return quadrotor.evaluate_f(current_u_real, current_x)
     # Integrate one step
     sol = solve_ivp(f, (0, dt), current_x, first_step=dt)
 
