@@ -24,12 +24,13 @@ class Animation:
 
     def plot_quadrotor(self, state, ax: plt.Axes):
         x, y, theta, phi = state[:4]
+
         x_radi = self.drone_width * np.cos(theta)
         y_radi = self.drone_width * np.sin(theta)
 
         lines = []
         lines += ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
-        lines += ax.plot([x, x - self.pendu_width * np.cos(phi)], [y, y - self.pendu_width * np.sin(phi)], 'r')
+        lines += ax.plot([x, x + self.pendu_width * np.sin(phi)], [y, y - self.pendu_width * np.cos(phi)], 'r')
 
         return lines
 
