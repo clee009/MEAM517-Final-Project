@@ -106,10 +106,9 @@ class QuadrotorPendulum(VectorSystem):
     # to vectors.
     qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
 
-    print('evaluate_f output =', np.hstack([qd, qdd]))
+    # print('evaluate_f output =', np.hstack([qd, qdd]))
 
     return np.hstack([qd, qdd])
-
 
   # This method calculates the time derivative of the state,
   # which allows the system to be simulated forward in time.
@@ -186,6 +185,20 @@ class QuadrotorPendulum(VectorSystem):
     
     return (A, B)
   
+  def discrete_time_linearized_dynamics(self, T):
+    # T is the time step for discretization
+    # Get the continuous-time linearized dynamics
+    u_f = self.u_d()  # Fixed point control input
+    x_f = self.x_d()  # Fixed point state
+    A_c, B_c = self.GetLinearizedDynamics(u_f, x_f)
+
+    # Discretize the linearized dynamics
+    I = np.identity(len(x_f))  # Identity matrix
+    A_d = I + A_c * T
+    B_d = B_c * T
+
+    return A_d, B_d
+  
   def x_d(self):
     # Nominal state
     return np.array([0, 0, 0, 0, 0, 0, 0, 0])
@@ -205,14 +218,14 @@ class QuadrotorPendulum(VectorSystem):
     # The limits are available through self.umin and self.umax
     for uk in u:
       ones = np.ones_like(uk)
-      prog.AddBoundingBoxConstraint(self.umin * ones - self.u_d(), self.umax * ones - self.u_d(), uk)
+      prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_d(), self.input_max * ones - self.u_d(), uk)
 
   def add_dynamics_constraint(self, prog, x, u, N, T):
     # TODO: impose dynamics constraint.
     # Use AddLinearEqualityConstraint(expr, value)
     A, B = self.discrete_time_linearized_dynamics(T)
     for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
-      prog.AddLinearEqualityConstraint(xk_p1 - A@xk - B@u[k], np.zeros_like(xk))
+      prog.AddLinearEqualityConstraint(xk_p1 - A @ xk - B @ u[k], np.zeros_like(xk))
 
   def add_cost(self, prog, x, u, N):
     # TODO: add cost.
@@ -234,9 +247,9 @@ class QuadrotorPendulum(VectorSystem):
 
     # Initialize mathematical program and decalre decision variables
     prog = MathematicalProgram()
-    x = np.zeros((N, 6), dtype="object")
+    x = np.zeros((N, 8), dtype="object")
     for i in range(N):
-      x[i] = prog.NewContinuousVariables(6, "x_" + str(i))
+      x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
     u = np.zeros((N-1, 2), dtype="object")
     for i in range(N-1):
       u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
