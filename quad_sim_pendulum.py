@@ -1,7 +1,7 @@
 import numpy as np
 from math import sin, cos, pi
 from scipy.integrate import solve_ivp
-from MEAM517_Final_Project.quadrotor import Quadrotor
+from MEAM517_Final_Project.quadrotor_with_pendulum import QuadrotorPendulum
 import matplotlib.pyplot as plt
 
 def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, use_clf_qp=False):
@@ -28,10 +28,10 @@ def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, 
     else:
       current_u_command = quadrotor.compute_lqr_feedback(current_x)
 
-    current_u_real = np.clip(current_u_command, quadrotor.umin, quadrotor.umax)
+    current_u_real = np.clip(current_u_command, quadrotor.input_min, quadrotor.input_max)
     # Autonomous ODE for constant inputs to work with solve_ivp
     def f(t, x):
-      return quadrotor.continuous_time_full_dynamics(current_x, current_u_real)
+      return quadrotor.evaluate_f(current_u_real, current_x)
     # Integrate one step
     sol = solve_ivp(f, (0, dt), current_x, first_step=dt)
 
