@@ -29,7 +29,7 @@ class Animation:
 
         lines = []
         lines += ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
-        lines += ax.plot([x, x - self.pendu_width * np.cos(phi)], [y, y - self.pendu_width * np.sin(phi)], 'r')
+        lines += ax.plot([x, x + self.pendu_width * np.sin(phi)], [y, y - self.pendu_width * np.cos(phi)], 'r')
 
         return lines
 
@@ -47,7 +47,7 @@ class Animation:
 
         frame_ids = np.linspace(0, len(self.traj) - 1, self.num_frames)
         frame_ids = [int(np.round(x)) for x in frame_ids]
-        anim_states = np.zeros((self.num_frames, 6))
+        anim_states = np.zeros((self.num_frames, 8))
         for i, frame_id in enumerate(frame_ids):
             anim_states[i,:] = self.traj[frame_id,:]
 
