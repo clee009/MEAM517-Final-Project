@@ -2,10 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import rc
+from obstacles import Obstacles
 
 
 class Animation:
-    def __init__(self, tf = 10, num_frames = 60):
+    def __init__(self, obstacles: Obstacles, tf = 10, num_frames = 60):
+        self.obstacles = obstacles
         self.drone_width = 0.25
         self.pendu_width = 0.25
 
@@ -56,8 +58,11 @@ class Animation:
 
         def frame(i):
             ax.clear()
-            self.plot_trajectory(frame_ids[i], ax)
-            plot = self.plot_quadrotor(anim_states[i], ax)
+
+            lines = []
+            lines += self.obstacles.plot(ax)
+            lines += self.plot_trajectory(frame_ids[i], ax)
+            lines += self.plot_quadrotor(anim_states[i], ax)
             
             if(np.abs((x_max - x_min) - (y_max - y_min)) < 5):
                 ax.set_xlim(x_min - x_padding, x_max + x_padding)
@@ -68,6 +73,6 @@ class Animation:
             ax.set_aspect('equal')
             ax.legend(loc='upper left')
 
-            return plot
+            return lines
 
         return animation.FuncAnimation(fig, frame, frames=self.num_frames, blit=False, repeat=False), fig
