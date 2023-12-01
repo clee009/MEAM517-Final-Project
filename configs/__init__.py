@@ -2,7 +2,7 @@ import os
 import yaml
 
 
-def load_yaml(file: str):
+def load_yaml(file: str) -> dict:
     if not os.path.exists(file):
         raise FileNotFoundError("cannot find file \"%s\", aborting.. " % file)
     
