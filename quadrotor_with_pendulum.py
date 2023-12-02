@@ -229,7 +229,7 @@ class QuadrotorPendulum(VectorSystem):
   
   def x_d(self):
     # Nominal state
-    return np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    return np.array([5, 2, 0, 0, 0, 0, 0, 0])
 
   def u_d(self):
     # Nominal input
