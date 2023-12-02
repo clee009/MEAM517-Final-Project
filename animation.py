@@ -2,16 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import rc
+from obstacles import Obstacles
+from quadrotor_with_pendulum import QuadrotorPendulum
 
 
 class Animation:
-    def __init__(self, tf = 10, num_frames = 60):
+    def __init__(self, obstacles: Obstacles, quad: QuadrotorPendulum, tf = 10, num_frames = 60):
+        self.obstacles = obstacles
         self.drone_width = 0.25
         self.pendu_width = 0.25
 
-        self.traj = np.zeros((1,6))
+        self.traj = np.zeros((1,8))
+        self.quad = quad
         self.tf = tf
         self.num_frames = num_frames
+
 
     
     def set_trajectory(self, traj):
@@ -24,13 +29,15 @@ class Animation:
 
     def plot_quadrotor(self, state, ax: plt.Axes):
         x, y, theta, phi = state[:4]
-
-        x_radi = self.drone_width * np.cos(theta)
-        y_radi = self.drone_width * np.sin(theta)
+        x_radi = self.quad.lb * np.cos(theta) / 2
+        y_radi = self.quad.lb * np.sin(theta) / 2
 
         lines = []
         lines += ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
-        lines += ax.plot([x, x + self.pendu_width * np.sin(phi)], [y, y - self.pendu_width * np.cos(phi)], 'r')
+        lines += ax.plot([x, x + self.quad.l1 * np.sin(phi)], [y, y - self.quad.l1 * np.cos(phi)], 'r')
+        
+        ends = self.quad.get_ends(state)
+        lines += ax.plot(ends[:,0], ends[:,1], 'ro') # Your original list
 
         return lines
 
@@ -57,8 +64,11 @@ class Animation:
 
         def frame(i):
             ax.clear()
-            self.plot_trajectory(frame_ids[i], ax)
-            plot = self.plot_quadrotor(anim_states[i], ax)
+
+            lines = []
+            lines += self.obstacles.plot(ax)
+            lines += self.plot_trajectory(frame_ids[i], ax)
+            lines += self.plot_quadrotor(anim_states[i], ax)
             
             if(np.abs((x_max - x_min) - (y_max - y_min)) < 5):
                 ax.set_xlim(x_min - x_padding, x_max + x_padding)
@@ -69,6 +79,6 @@ class Animation:
             ax.set_aspect('equal')
             ax.legend(loc='upper left')
 
-            return plot
+            return lines
 
         return animation.FuncAnimation(fig, frame, frames=self.num_frames, blit=False, repeat=False), fig
