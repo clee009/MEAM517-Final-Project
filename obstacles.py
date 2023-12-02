@@ -1,18 +1,17 @@
-import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import yaml
+
+import configs
 
 
 class Obstacles:
     def __init__(self, file: str):
         self.boxes = []
 
-        assert os.path.exists(file)
-        with open(file, 'r') as data:
-            data = yaml.safe_load(data)
-            self.boxes.append(data["boundary"])
-            self.boxes += data["obstacles"]
+        
+        data = configs.load_yaml(file)
+        self.boxes.append(data["boundary"])
+        self.boxes += data["obstacles"]
 
         for i, box in enumerate(self.boxes):
             assert len(box) == 4 and "wrong datasize at obstacle %d" % i

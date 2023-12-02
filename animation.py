@@ -3,17 +3,20 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import rc
 from obstacles import Obstacles
+from quadrotor_with_pendulum import QuadrotorPendulum
 
 
 class Animation:
-    def __init__(self, obstacles: Obstacles, tf = 10, num_frames = 60):
+    def __init__(self, obstacles: Obstacles, quad: QuadrotorPendulum, tf = 10, num_frames = 60):
         self.obstacles = obstacles
         self.drone_width = 0.25
         self.pendu_width = 0.25
 
-        self.traj = np.zeros((1,6))
+        self.traj = np.zeros((1,8))
+        self.quad = quad
         self.tf = tf
         self.num_frames = num_frames
+
 
     
     def set_trajectory(self, traj):
@@ -26,12 +29,15 @@ class Animation:
 
     def plot_quadrotor(self, state, ax: plt.Axes):
         x, y, theta, phi = state[:4]
-        x_radi = self.drone_width * np.cos(theta)
-        y_radi = self.drone_width * np.sin(theta)
+        x_radi = self.quad.lb * np.cos(theta) / 2
+        y_radi = self.quad.lb * np.sin(theta) / 2
 
         lines = []
         lines += ax.plot([x + x_radi, x - x_radi], [y + y_radi, y - y_radi], 'g')
-        lines += ax.plot([x, x + self.pendu_width * np.sin(phi)], [y, y - self.pendu_width * np.cos(phi)], 'r')
+        lines += ax.plot([x, x + self.quad.l1 * np.sin(phi)], [y, y - self.quad.l1 * np.cos(phi)], 'r')
+        
+        ends = self.quad.get_ends(state)
+        lines += ax.plot(ends[:,0], ends[:,1], 'ro') # Your original list
 
         return lines
 
