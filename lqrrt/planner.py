@@ -103,7 +103,7 @@ class Planner:
 
     def update_plan(self, x0, sample_space, goal_bias=0,
                     guide=None, xrand_gen=None, pruning=True,
-                    finish_on_goal=False, specific_time=None):
+                    finish_on_goal=False, specific_time=None, u_d = None):
         """
         A new tree is grown from the seed x0 in an attempt to plan
         a path to the goal. The returned path can be accessed with
@@ -234,6 +234,7 @@ class Planner:
 
             # Random sample state
             xrand = xrand_gen(self)
+            
 
             # The "nearest" node to xrand has the least cost-to-go of all nodes
             if pruning:
@@ -246,8 +247,10 @@ class Planner:
             else:
                 nearestID = np.argmin(self._costs_to_go(xrand))
 
+
             # Candidate extension to the tree
-            xnew_seq, unew_seq = self._steer(nearestID, xrand, force_arrive=False)
+            xnew_seq, unew_seq = self._steer(nearestID, xrand, u_d, force_arrive=False)
+            #print(xnew_seq, unew_seq)
 
             # If steer produced any feasible results, extend tree
             if len(xnew_seq) > 0:
@@ -293,7 +296,7 @@ class Planner:
             elif self.plan_reached_goal and time_elapsed >= min_time:
                 if finish_on_goal:
                     # Steer to exact goal
-                    xgoal_seq, ugoal_seq = self._steer(self.node_seq[-1], self.goal, force_arrive=True)
+                    xgoal_seq, ugoal_seq = self._steer(self.node_seq[-1], self.goal, u_d, force_arrive=True)
                     # If it works, tack it onto the plan
                     if len(xgoal_seq) > 0:
                         self.tree.add_node(self.node_seq[-1], self.goal, None, xgoal_seq, ugoal_seq)
@@ -351,7 +354,7 @@ class Planner:
 
 #################################################
 
-    def _steer(self, ID, xtar, force_arrive=False):  #<<< need to numpy this function for final speedup!
+    def _steer(self, ID, xtar, u_d, force_arrive=False):  #<<< need to numpy this function for final speedup!
         """
         Starting from the given node ID's state, the system dynamics are
         forward simulated using the local LQR policy toward xtar.
@@ -385,6 +388,8 @@ class Planner:
             # Compute effort using local LQR policy
             e = self.erf(np.copy(xtar), np.copy(x))
             u = K.dot(e)
+            if u_d is not None:
+                u += u_d
 
             # Step forward dynamics
             x = self.dynamics(np.copy(x), np.copy(u), self.dt)
