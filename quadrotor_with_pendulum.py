@@ -258,9 +258,14 @@ class QuadrotorPendulum(VectorSystem):
   def add_cost(self, prog, x, u, N):
     # TODO: add cost.
     cost = x[-1].T @ self.Qf @ x[-1]
+    xf = self.x_d()
+    uf = self.u_d()
+
     for xk, uk in zip(x, u):
-      cost += xk.T @ self.Q @ xk
-      cost += uk.T @ self.R @ uk
+      xe = xk - xf
+      ue = uk - uf
+      cost += xe.T @ self.Q @ xe
+      cost += ue.T @ self.R @ ue
     
     prog.AddQuadraticCost(cost)
 
