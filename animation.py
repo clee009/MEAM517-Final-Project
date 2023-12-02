@@ -9,15 +9,14 @@ from quadrotor_with_pendulum import QuadrotorPendulum
 class Animation:
     def __init__(self, obstacles: Obstacles, quad: QuadrotorPendulum, tf = 10, num_frames = 60):
         self.obstacles = obstacles
-        self.drone_width = 0.25
-        self.pendu_width = 0.25
 
         self.traj = np.zeros((1,8))
         self.quad = quad
         self.tf = tf
         self.num_frames = num_frames
 
-
+        self.drone_width = quad.lb
+        self.pendu_width = quad.l1
     
     def set_trajectory(self, traj):
         self.traj = traj

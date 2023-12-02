@@ -49,7 +49,6 @@ def direct_collocation(N, x0, xf,):
     dircol.AddConstraintToAllKnotPoints(dircol.input()[1] >= min_input)
 
     dircol.AddBoundingBoxConstraint(x0, x0, dircol.initial_state())
-
     dircol.AddBoundingBoxConstraint(xf, xf, dircol.final_state())
 
     dircol.AddRunningCost(dircol.input()[0]**2)
