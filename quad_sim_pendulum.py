@@ -1,7 +1,6 @@
 import numpy as np
 from math import sin, cos, pi
 from scipy.integrate import solve_ivp
-from MEAM517_Final_Project.quadrotor_with_pendulum import QuadrotorPendulum
 import matplotlib.pyplot as plt
 
 def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, use_clf_qp=False):
