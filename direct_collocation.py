@@ -57,10 +57,9 @@ def direct_collocation(N, x0, xf,):
 
 
 
-def window_constraint(x, lb, l1, ):
+def window_constraint(quadrotor, x):
     """
     
     """
-    xb = x[0]
-    yb = x[1]
-    thb = 
+    end_pos = quadrotor.get_ends(x)
+    

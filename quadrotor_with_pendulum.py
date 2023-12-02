@@ -93,7 +93,7 @@ class QuadrotorPendulum(VectorSystem):
 
     # Right tip of body/wing
     xr = xb + self.lb /2 * cos(thb)
-    yr = yb = self.lb / 2 * sin(thb)
+    yr = yb + self.lb / 2 * sin(thb)
 
     # Left tip of body/wing
     xl = xb - self.lb / 2 * cos(thb)
