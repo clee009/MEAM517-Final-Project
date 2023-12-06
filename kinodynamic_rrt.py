@@ -50,7 +50,7 @@ class KinodtnamicRRT:
                     if not (x_min <= xe <= x_max and y_min <= ye <= y_max): 
                         return False
                     
-                elif x_min <= xe <= x_max or y_min <= ye <= y_max:
+                elif x_min <= xe <= x_max and y_min <= ye <= y_max:
                     return False
 
         return True
@@ -65,7 +65,7 @@ class KinodtnamicRRT:
     
 
     def find_trajectory(self, x0, goal):
-        buff = 5
+        buff = 0.1
         x_min, y_min, x_max, y_max = self.obs.boxes[0]
         sample_space = [(x_min, x_max),
                         (y_min, y_max),
@@ -80,7 +80,7 @@ class KinodtnamicRRT:
 
         ################################################# PLAN
 
-        goal_buffer = 8 * [1]
+        goal_buffer = 8 * [0.1]
         constraints = lqrrt.Constraints(nstates=len(self.Q), ncontrols=len(self.R),
                                         goal_buffer=goal_buffer, is_feasible=self.is_feasible)
 
@@ -90,9 +90,14 @@ class KinodtnamicRRT:
                                 goal0=goal, printing=True)
 
         planner.update_plan(x0, sample_space, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
-        print(planner.tree.state.shape)
         
         import matplotlib.pyplot as plt
+        x_min, y_min, x_max, y_max = self.obs.boxes[0]
+
+        plt.xlim([x_min, x_max])
+        plt.ylim([y_min, y_max])
+        self.obs.plot(plt.gca())
+
         plt.scatter(planner.tree.state[:,0], planner.tree.state[:,1])
         for ID in range(planner.tree.size):
             x_seq = np.array(planner.tree.x_seq[ID])

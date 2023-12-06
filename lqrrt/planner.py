@@ -98,6 +98,7 @@ class Planner:
 
         self.printing = printing
         self.killed = False
+        self.samples = []
 
 #################################################
 
@@ -208,6 +209,7 @@ class Planner:
                     if self.constraints.is_feasible(xrand, np.zeros(self.ncontrols)):
                         return xrand
                     tries += 1
+
                 return xrand
 
         # Otherwise, use given sampling function
@@ -234,6 +236,7 @@ class Planner:
 
             # Random sample state
             xrand = xrand_gen(self)
+            self.samples.append(xrand)
             
 
             # The "nearest" node to xrand has the least cost-to-go of all nodes
