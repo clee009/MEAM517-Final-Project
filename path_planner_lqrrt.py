@@ -8,16 +8,14 @@ from scipy.linalg import solve_continuous_are
 from scipy.integrate import solve_ivp
 
 
-class KinodtnamicRRT:
+class PathPlannerLQRRT:
     def __init__(self, file: str, obs: Obstacles, quad: QuadrotorPendulum):
         for key, value in configs.load_yaml(file).items():
             setattr(self, key, value)
 
-        self.R = np.array(self.R)
-        self.iR = np.linalg.inv(self.R)
-
-        self.Q = np.array(self.Q)
-        self.Qf = np.array(self.Qf)
+        self.Q = np.array(quad.Q)
+        self.R = np.array(quad.R)
+        self.iR = np.linalg.inv(quad.R)
 
         self.obs = obs
         self.quad = quad
@@ -25,18 +23,13 @@ class KinodtnamicRRT:
 
     def lqr(self, x, u): #lqrrt input wrapping
         A, B = self.quad.GetLinearizedDynamics(self.quad.u_d(), x)
-        S = solve_continuous_are(A, B, self.quad.Q, self.quad.R)
-        K = -np.linalg.inv(self.quad.R) @ B.T @ S
+        S = solve_continuous_are(A, B, self.Q, self.R)
+        K = -self.iR @ B.T @ S
         return S, K
     
     
     def erf(self, xgoal, x):
-        """
-        Returns error e given two states xgoal and x.
-
-        """
-        e = x - xgoal
-        return e
+        return x - xgoal
     
 
     def is_feasible(self, x, u):
@@ -65,31 +58,32 @@ class KinodtnamicRRT:
     
 
     def find_trajectory(self, x0, goal):
-        buff = 0.1
         x_min, y_min, x_max, y_max = self.obs.boxes[0]
-        sample_space = [(x_min, x_max),
-                        (y_min, y_max),
-                        (-np.pi/2, np.pi/2),
-                        (-np.pi/2, np.pi/2),
-                        (-buff, buff),
-                        (-buff, buff),
-                        (-buff, buff),
-                        (-buff, buff),]
+        sample_space = np.zeros((8,2))
+        sample_space[:,0] = -np.pi/2
+        sample_space[:,1] =  np.pi/2
+
+        sample_space[0,0] = x_min
+        sample_space[0,1] = x_max
+        sample_space[1,0] = y_min
+        sample_space[1,1] = y_max
+        sample_space[4:,1] = np.array(self.vel_span)
+        sample_space[4:,0] = -sample_space[4:,1]
 
         xrand_gen = None
 
         ################################################# PLAN
 
-        goal_buffer = 8 * [0.1]
+        goal_buffer = 8 * [self.goal_buffer]
         constraints = lqrrt.Constraints(nstates=len(self.Q), ncontrols=len(self.R),
                                         goal_buffer=goal_buffer, is_feasible=self.is_feasible)
 
         planner = lqrrt.Planner(self.dynamics, self.lqr, constraints,
-                                horizon=30, dt=self.dt, erf=self.erf,
-                                min_time=0, max_time=30, max_nodes=1e5,
+                                horizon=self.horizon, dt=self.dt, erf=self.erf, 
+                                min_time=0, max_time=self.max_time, max_nodes=self.max_node,
                                 goal0=goal, printing=True)
 
-        planner.update_plan(x0, sample_space, goal_bias=0.2, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
+        planner.update_plan(x0, sample_space, goal_bias=self.goal_bias, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
         
         import matplotlib.pyplot as plt
         x_min, y_min, x_max, y_max = self.obs.boxes[0]
