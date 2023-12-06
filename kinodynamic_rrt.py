@@ -89,7 +89,7 @@ class KinodtnamicRRT:
                                 min_time=0, max_time=30, max_nodes=1e5,
                                 goal0=goal, printing=True)
 
-        planner.update_plan(x0, sample_space, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
+        planner.update_plan(x0, sample_space, goal_bias=0.2, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
         
         import matplotlib.pyplot as plt
         x_min, y_min, x_max, y_max = self.obs.boxes[0]
@@ -107,6 +107,26 @@ class KinodtnamicRRT:
                 plt.plot((x_seq[:,0]), (x_seq[:,1]), color='0.75', zorder=1)
         plt.show()
 
-        dt = 0.001  # s
+        dt = 0.03  # s
         T = planner.T  # s
         t_arr = np.arange(0, T, dt)
+
+        # Preallocate results memory
+        x = np.copy(x0)
+        x_history = np.zeros((len(t_arr), 8))
+        goal_history = np.zeros((len(t_arr), 8))
+        u_history = np.zeros((len(t_arr), 2))
+
+        # Interpolate plan
+        for i, t in enumerate(t_arr):
+
+            # Planner's decision
+            x = planner.get_state(t)
+            u = planner.get_effort(t)
+
+            # Record this instant
+            x_history[i, :] = x
+            goal_history[i, :] = goal
+            u_history[i, :] = u
+
+        return t_arr, x_history, u_history
