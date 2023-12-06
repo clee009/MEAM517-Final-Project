@@ -1,11 +1,11 @@
 import numpy as np
-import numpy.linalg as npl
 import lqrrt
 import configs
 from quadrotor_with_pendulum import QuadrotorPendulum
 from obstacles import Obstacles
 from scipy.linalg import solve_continuous_are
 from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
 
 
 class PathPlannerLQRRT:
@@ -57,7 +57,40 @@ class PathPlannerLQRRT:
         return sol.y[:,-1].ravel()
     
 
-    def find_trajectory(self, x0, goal):
+    def plot_result(self, planner: lqrrt.Planner):
+        x_min, y_min, x_max, y_max = self.obs.boxes[0]
+
+        plt.xlim([x_min, x_max])
+        plt.ylim([y_min, y_max])
+        self.obs.plot(plt.gca())
+
+        plt.scatter(planner.tree.state[:,0], planner.tree.state[:,1])
+        for ID in range(planner.tree.size):
+            x_seq = np.array(planner.tree.x_seq[ID])
+            if ID in planner.node_seq:
+                plt.plot((x_seq[:,0]), (x_seq[:,1]), color='r', zorder=2)
+            else:
+                plt.plot((x_seq[:,0]), (x_seq[:,1]), color='0.75', zorder=1)
+        plt.show()
+
+
+    def interpolate_trajectory(self, planner: lqrrt.Planner):
+        T = planner.T  # s
+        t_arr = np.arange(0, T, self.traj_dt)
+
+        # Preallocate results memory
+        x_history = np.zeros((len(t_arr), 8))
+        u_history = np.zeros((len(t_arr), 2))
+
+        # Interpolate plan
+        for i, t in enumerate(t_arr):
+            x_history[i, :] = planner.get_state(t)
+            u_history[i, :] = planner.get_effort(t)
+
+        return t_arr, x_history, u_history
+    
+
+    def get_planner(self, x0, goal):
         x_min, y_min, x_max, y_max = self.obs.boxes[0]
         sample_space = np.zeros((8,2))
         sample_space[:,0] = -np.pi/2
@@ -82,45 +115,5 @@ class PathPlannerLQRRT:
                                 horizon=self.horizon, dt=self.dt, erf=self.erf, 
                                 min_time=0, max_time=self.max_time, max_nodes=self.max_node,
                                 goal0=goal, printing=True)
-
         planner.update_plan(x0, sample_space, goal_bias=self.goal_bias, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
-        
-        import matplotlib.pyplot as plt
-        x_min, y_min, x_max, y_max = self.obs.boxes[0]
-
-        plt.xlim([x_min, x_max])
-        plt.ylim([y_min, y_max])
-        self.obs.plot(plt.gca())
-
-        plt.scatter(planner.tree.state[:,0], planner.tree.state[:,1])
-        for ID in range(planner.tree.size):
-            x_seq = np.array(planner.tree.x_seq[ID])
-            if ID in planner.node_seq:
-                plt.plot((x_seq[:,0]), (x_seq[:,1]), color='r', zorder=2)
-            else:
-                plt.plot((x_seq[:,0]), (x_seq[:,1]), color='0.75', zorder=1)
-        plt.show()
-
-        dt = 0.03  # s
-        T = planner.T  # s
-        t_arr = np.arange(0, T, dt)
-
-        # Preallocate results memory
-        x = np.copy(x0)
-        x_history = np.zeros((len(t_arr), 8))
-        goal_history = np.zeros((len(t_arr), 8))
-        u_history = np.zeros((len(t_arr), 2))
-
-        # Interpolate plan
-        for i, t in enumerate(t_arr):
-
-            # Planner's decision
-            x = planner.get_state(t)
-            u = planner.get_effort(t)
-
-            # Record this instant
-            x_history[i, :] = x
-            goal_history[i, :] = goal
-            u_history[i, :] = u
-
-        return t_arr, x_history, u_history
+        return planner
