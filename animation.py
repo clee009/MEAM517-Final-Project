@@ -7,18 +7,13 @@ from quadrotor_with_pendulum import QuadrotorPendulum
 
 
 class Animation:
-    def __init__(self, obstacles: Obstacles, quad: QuadrotorPendulum, tf = 10, num_frames = 60):
-        self.obstacles = obstacles
-        self.drone_width = 0.25
-        self.pendu_width = 0.25
-
+    def __init__(self, obs: Obstacles, quad: QuadrotorPendulum, num_frames = 60):
+        self.obs = obs
         self.traj = np.zeros((1,8))
         self.quad = quad
-        self.tf = tf
         self.num_frames = num_frames
 
 
-    
     def set_trajectory(self, traj):
         self.traj = traj
 
@@ -48,31 +43,24 @@ class Animation:
         fig = plt.figure(figsize=(8,6))
         ax = plt.axes()
 
-        x_max = self.traj[:,0].max()
-        x_min = self.traj[:,0].min()
-        y_max = self.traj[:,1].max()
-        y_min = self.traj[:,1].min()
-
         frame_ids = np.linspace(0, len(self.traj) - 1, self.num_frames)
         frame_ids = [int(np.round(x)) for x in frame_ids]
         anim_states = np.zeros((self.num_frames, 8))
         for i, frame_id in enumerate(frame_ids):
             anim_states[i,:] = self.traj[frame_id,:]
 
-        x_padding = 0.25 * (x_max - x_min)
-        y_padding = 0.25 * (y_max - y_min)
+        x_min, y_min, x_max, y_max = self.obs.boxes[0]
 
         def frame(i):
             ax.clear()
 
             lines = []
-            lines += self.obstacles.plot(ax)
+            lines += self.obs.plot(ax)
             lines += self.plot_trajectory(frame_ids[i], ax)
             lines += self.plot_quadrotor(anim_states[i], ax)
-            
-            if(np.abs((x_max - x_min) - (y_max - y_min)) < 5):
-                ax.set_xlim(x_min - x_padding, x_max + x_padding)
-                ax.set_ylim(y_min - y_padding, y_max + y_padding)
+
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
 
             ax.set_xlabel('y (m)')
             ax.set_ylabel('z (m)')
@@ -80,5 +68,7 @@ class Animation:
             ax.legend(loc='upper left')
 
             return lines
-
-        return animation.FuncAnimation(fig, frame, frames=self.num_frames, blit=False, repeat=False), fig
+        
+        anim = animation.FuncAnimation(fig, frame, frames=self.num_frames, blit=False, repeat=False)
+        plt.close()
+        return anim
