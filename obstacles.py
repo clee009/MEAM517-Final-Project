@@ -16,6 +16,29 @@ class Obstacles:
         for i, box in enumerate(self.boxes):
             assert len(box) == 4 and "wrong datasize at obstacle %d" % i
 
+        self.convex_region_segmentation()
+
+
+    def convex_region_segmentation(self):
+        self.segments = [self.boxes[0]]
+        x_lines = set()
+        y_lines = set()
+        for x_min, y_min, x_max, y_max in self.boxes:
+            x_lines.add(x_min)
+            x_lines.add(x_max)
+            y_lines.add(y_min)
+            y_lines.add(y_max)
+
+        x_lines = sorted(list(x_lines))
+        y_lines = sorted(list(y_lines))
+
+        for x_min, x_max in zip(x_lines, x_lines[1:]):
+            for y_min, y_max in zip(y_lines, y_lines[1:]):
+                box = [x_min, y_min, x_max, y_max]
+                if box not in self.boxes:
+                    self.segments.append(box)
+
+
 
     def is_feasible(self, points):
         xl = points[:,0].min()
@@ -35,9 +58,11 @@ class Obstacles:
         return True
 
 
-    def plot(self, ax: plt.Axes):
+    def plot(self, ax: plt.Axes, plot_segs=False):
         lines = []
-        for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
+        boxes = self.segments if plot_segs else self.boxes
+        colors = ['k','b','y','g','r']
+        for i, (x_min, y_min, x_max, y_max) in enumerate(boxes):
             if i==0: #world boundary
                 linewidth = 4
                 lines += ax.plot([x_min, x_max], [y_min, y_min], 'orange', linewidth=linewidth)
@@ -47,7 +72,8 @@ class Obstacles:
             else:
                 w = x_max - x_min
                 h = y_max - y_min
-                line = ax.add_patch(Rectangle((x_min, y_min), w, h))
+                idx = i % len(colors)
+                line = ax.add_patch(Rectangle((x_min, y_min), w, h, facecolor=colors[idx]))
                 lines.append(line)
 
         return lines
