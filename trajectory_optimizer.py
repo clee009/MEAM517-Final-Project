@@ -44,7 +44,21 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory, 
         # Add obstacle avoidance constraints
         tip_pos = quadrotor_pendulum.get_ends(x_vars[i])
         feasibility = obstacles.is_feasible_continuous(tip_pos)
-        prog.AddConstraint(feasibility >= 0)            
+        prog.AddConstraint(feasibility >= 0)
+    
+    # Add boundary constraints
+    x_min, y_min, x_max, y_max = obstacles.get_world()[0]
+    for i in range(N + 1):
+        # Extract the position (x, y) from the state
+        # Assuming the first two elements of the state vector are x and y positions
+        x_pos = x_vars[i][0]
+        y_pos = x_vars[i][1]
+
+        # Add boundary constraints
+        prog.AddConstraint(x_pos >= x_min)
+        prog.AddConstraint(x_pos <= x_max)
+        prog.AddConstraint(y_pos >= y_min)
+        prog.AddConstraint(y_pos <= y_max)
 
     # Define and add the cost function (Modify as per your specific cost function)
     for u in u_vars:
