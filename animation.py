@@ -12,7 +12,7 @@ class Animation:
         self.traj = np.zeros((1,8))
         self.quad = quad
         self.num_frames = num_frames
-
+        
 
     def set_trajectory(self, traj):
         self.traj = traj
