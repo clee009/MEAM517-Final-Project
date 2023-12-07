@@ -5,4 +5,5 @@ goal_bias: 0.2
 horizon: 30
 max_time: 30
 max_node: 100000
+epsilon: 0.1
 vel_span: [0.1, 0.1, 0.1, 0.1]

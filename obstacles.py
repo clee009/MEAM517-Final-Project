@@ -17,8 +17,22 @@ class Obstacles:
             assert len(box) == 4 and "wrong datasize at obstacle %d" % i
 
 
-    def add_obstacle(self, x_min, y_min, x_max, y_max):
-        self.boxes.append((x_min, y_min, x_max, y_max))
+    def is_feasible(self, points):
+        xl = points[:,0].min()
+        xh = points[:,0].max()
+        yl = points[:,1].min()
+        yh = points[:,1].max()
+        for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
+            is_outside = (x_min >= xh or x_max <= xl) and (y_min >= yh or y_max <= yl)
+            #is_inside = x_min < xl and xh < x_max and y_min < yl and yh < y_max
+            if i == 0:
+                if is_outside:
+                    return False
+                
+            elif not is_outside:
+                return False
+            
+        return True
 
 
     def plot(self, ax: plt.Axes):

@@ -37,16 +37,7 @@ class PathPlannerLQRRT:
             return False
         
         ends = self.quad.get_ends(x)
-        for i, (x_min, y_min, x_max, y_max) in enumerate(self.obs.boxes):
-            for xe, ye in ends:
-                if i==0: 
-                    if not (x_min <= xe <= x_max and y_min <= ye <= y_max): 
-                        return False
-                    
-                elif x_min <= xe <= x_max and y_min <= ye <= y_max:
-                    return False
-
-        return True
+        return self.obs.is_feasible(ends)
     
 
     def dynamics(self, xc, uc, dt):
@@ -111,7 +102,7 @@ class PathPlannerLQRRT:
         constraints = lqrrt.Constraints(nstates=len(self.Q), ncontrols=len(self.R),
                                         goal_buffer=goal_buffer, is_feasible=self.is_feasible)
 
-        planner = lqrrt.Planner(self.dynamics, self.lqr, constraints,
+        planner = lqrrt.Planner(self.dynamics, self.lqr, constraints, error_tol=self.epsilon, 
                                 horizon=self.horizon, dt=self.dt, erf=self.erf, 
                                 min_time=0, max_time=self.max_time, max_nodes=self.max_node,
                                 goal0=goal, printing=True)
