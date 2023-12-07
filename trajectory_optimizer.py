@@ -2,7 +2,7 @@ import numpy as np
 from pydrake.all import MathematicalProgram, Solve
 import pydrake.symbolic as sym
 
-def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory):
+def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory, obstacles):
     """
     Optimizes the trajectory for a quadrotor with a pendulum using an initial guess.
 
@@ -39,6 +39,21 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory):
     for i in range(N):
         x_next = x_vars[i] + dt * quadrotor_pendulum.evaluate_f(u_vars[i], x_vars[i])
         prog.AddConstraint(x_vars[i + 1] == x_next)
+
+    # Add obstacle avoidance constraints
+    for i in range(N + 1):
+        for obs in obstacles:
+            x_min, y_min, x_max, y_max = obs
+
+            # Get the positions of the tips from the current state
+            xr, yr, xl, yl, xm, ym = quadrotor_pendulum.get_ends(x_vars[i])
+
+            # Keep tips within window
+            if x_min <= xr <= x_max or x_min <= xm <= x_max or x_min <= xl <= x_max:
+                print("In window")
+                prog.AddConstraint((yr < y_min and yr < y_max) or (yr > y_min and yr > y_max))
+                prog.AddConstraint((yl < y_min and yl < y_max) or (yl > y_min and yl > y_max))
+                prog.AddConstraint((ym < y_min and ym < y_max) or (ym > y_min and ym > y_max))
 
     # Define and add the cost function (Modify as per your specific cost function)
     for u in u_vars:
