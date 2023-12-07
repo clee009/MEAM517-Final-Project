@@ -20,6 +20,36 @@ class PathPlannerLQRRT:
         self.obs = obs
         self.quad = quad
 
+        sample_space = self._get_sampling_space()
+        self.sample_means = np.mean(sample_space, axis=1)
+        self.sample_spans = np.diff(sample_space).flatten()
+
+        self.x0 = np.array(self.x0)
+        self.xf = np.array(self.xf)
+        self.reset_accessibilities(self.x0)
+
+
+    def reset_accessibilities(self, x0):
+        self.accessible = len(self.obs.regions) * [False]
+
+        for i in self.obs.get_region_ids(x0):
+            self.accessible[i] = True
+
+
+    def _get_sampling_space(self):
+        x_min, y_min, x_max, y_max = self.obs.boxes[0]
+        sample_space = np.zeros((8,2))
+        sample_space[:,0] = -np.pi/2
+        sample_space[:,1] =  np.pi/2
+
+        sample_space[0,0] = x_min
+        sample_space[0,1] = x_max
+        sample_space[1,0] = y_min
+        sample_space[1,1] = y_max
+        sample_space[4:,1] = np.array(self.vel_span)
+        sample_space[4:,0] = -sample_space[4:,1]
+        return sample_space
+
 
     def lqr(self, x, u): #lqrrt input wrapping
         A, B = self.quad.GetLinearizedDynamics(self.quad.u_d(), x)
@@ -90,20 +120,23 @@ class PathPlannerLQRRT:
         return t_arr, x_history, u_history
     
 
+    def xrand_gen(self):
+        for _ in range(60):
+            xrand = self.sample_means + self.sample_spans * (np.random.sample(8)-0.5)
+            for i, choice in enumerate(np.greater(self.goal_bias, np.random.sample())):
+                if choice:
+                    xrand[i] = self.xf[i]
+
+            if self.is_feasible(xrand, np.zeros(2)):
+                for idx in self.obs.get_region_ids(xrand):
+                    if self.accessible[idx]:
+                        return xrand
+                    
+        return xrand
+    
+
     def get_planner(self, x0, goal):
-        x_min, y_min, x_max, y_max = self.obs.boxes[0]
-        sample_space = np.zeros((8,2))
-        sample_space[:,0] = -np.pi/2
-        sample_space[:,1] =  np.pi/2
-
-        sample_space[0,0] = x_min
-        sample_space[0,1] = x_max
-        sample_space[1,0] = y_min
-        sample_space[1,1] = y_max
-        sample_space[4:,1] = np.array(self.vel_span)
-        sample_space[4:,0] = -sample_space[4:,1]
-
-        xrand_gen = None
+        self.reset_accessibilities()
 
         ################################################# PLAN
 
@@ -115,5 +148,5 @@ class PathPlannerLQRRT:
                                 horizon=self.horizon, dt=self.dt, erf=self.erf, 
                                 min_time=0, max_time=self.max_time, max_nodes=self.max_node,
                                 goal0=goal, printing=True)
-        planner.update_plan(x0, sample_space, goal_bias=self.goal_bias, xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
+        planner.update_plan(x0, self.sample_space, goal_bias=self.goal_bias, xrand_gen=self.xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
         return planner
