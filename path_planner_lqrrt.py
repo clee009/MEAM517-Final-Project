@@ -37,7 +37,7 @@ class PathPlannerLQRRT:
             return False
             
         ends = self.quad.get_ends(x)
-        #return self.obs.is_feasible(ends)
+        return self.obs.is_feasible(ends)
         for i, (x_min, y_min, x_max, y_max) in enumerate(self.obs.boxes):
             for xe, ye in ends:
                 if i==0: 
