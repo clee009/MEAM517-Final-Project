@@ -35,11 +35,12 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory,
     prog.AddBoundingBoxConstraint(x0, x0, x_vars[0])
     prog.AddBoundingBoxConstraint(xf, xf, x_vars[-1])
 
-    for i in range(N):
-        # Add dynamic constraints
-        x_next = x_vars[i] + dt * quadrotor_pendulum.evaluate_f(u_vars[i], x_vars[i])
-        prog.AddLinearEqualityConstraint(x_vars[i + 1], x_next)
+    # Add dynamic constraints
+    A, B = quadrotor_pendulum.discrete_time_linearized_dynamics(dt)
+    for i, (xi, xi_p1) in enumerate(zip(x_vars, x_vars[1:])):
+      prog.AddLinearEqualityConstraint(xi_p1 - A @ xi - B @ u_vars[i], np.zeros_like(xi))
 
+    for i in range(N):
         # Add obstacle avoidance constraints
         tip_pos = quadrotor_pendulum.get_ends(x_vars[i])
         feasibility = obstacles.is_feasible_continuous(tip_pos)
