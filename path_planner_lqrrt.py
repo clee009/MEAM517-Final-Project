@@ -36,16 +36,15 @@ class PathPlannerLQRRT:
         if (u > self.quad.input_max).any() or (u < self.quad.input_min).any():
             return False
             
-        ends = self.quad.get_ends(x)
-        return self.obs.is_feasible(ends)
+        xe, ye = x[:2]
         for i, (x_min, y_min, x_max, y_max) in enumerate(self.obs.boxes):
-            for xe, ye in ends:
-                if i==0: 
-                    if not (x_min <= xe <= x_max and y_min <= ye <= y_max): 
-                        return False
-                    
-                elif x_min <= xe <= x_max and y_min <= ye <= y_max:
+            is_inside = x_min < xe < x_max and y_min < ye < y_max
+            if i==0: 
+                if not is_inside: 
                     return False
+                    
+            elif is_inside:
+                return False
 
         return True
     
