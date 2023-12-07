@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.linalg import inv
 from numpy.linalg import cholesky
-from math import sin, cos
+from sym import sin, cos
 import math
 from scipy.interpolate import interp1d
 from scipy.integrate import ode
@@ -54,14 +54,14 @@ class QuadrotorPendulum(VectorSystem):
   # according to the dynamics of this system.
   def GetManipulatorDynamics(self, q, qd):
     M = np.array(
-        [[self.mb + self.m1, 0., 0., self.m1*self.l1*math.cos(q[3])],
-          [0., self.mb + self.m1, 0., self.m1*self.l1*math.sin(q[3])],
+        [[self.mb + self.m1, 0., 0., self.m1*self.l1*sym.cos(q[3])],
+          [0., self.mb + self.m1, 0., self.m1*self.l1*sym.sin(q[3])],
           [0., 0., self.Ib, 0.],
-          [self.m1*self.l1*math.cos(q[3]), self.m1*self.l1*math.sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
+          [self.m1*self.l1*sym.cos(q[3]), self.m1*self.l1*sym.sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
     
     C = np.array(
-        [[0., 0., 0., -self.m1*self.l1*math.sin(q[3])*qd[3]],
-          [0., 0., 0., self.m1*self.l1*math.cos(q[3])*qd[3]],
+        [[0., 0., 0., -self.m1*self.l1*sym.sin(q[3])*qd[3]],
+          [0., 0., 0., self.m1*self.l1*sym.cos(q[3])*qd[3]],
           [0., 0., 0., 0.],
           [0., 0., 0., 0.]])
     
@@ -69,11 +69,11 @@ class QuadrotorPendulum(VectorSystem):
         [[0.],
           [-(self.m1+self.mb)*self.g],
           [0.],
-          [-self.m1*self.l1*self.g*math.sin(q[3])]])
+          [-self.m1*self.l1*self.g*sym.sin(q[3])]])
     
     B = np.array(
-        [[-math.sin(q[2]), -math.sin(q[2])],
-          [math.cos(q[2]), math.cos(q[2])],
+        [[-sym.sin(q[2]), -sym.sin(q[2])],
+          [sym.cos(q[2]), sym.cos(q[2])],
           [-self.lb, self.lb],
           [0., 0.]])
     
@@ -93,16 +93,16 @@ class QuadrotorPendulum(VectorSystem):
     th1 = x[3]
 
     # Right tip of body/wing
-    xr = xb + self.lb / 2 * cos(thb)
-    yr = yb + self.lb / 2 * sin(thb)
+    xr = xb + self.lb / 2 * sym.cos(thb)
+    yr = yb + self.lb / 2 * sym.sin(thb)
 
     # Left tip of body/wing
-    xl = xb - self.lb / 2 * cos(thb)
-    yl = yb - self.lb / 2 * sin(thb)
+    xl = xb - self.lb / 2 * sym.cos(thb)
+    yl = yb - self.lb / 2 * sym.sin(thb)
 
     # Tip of pendulum
-    xm = xb + self.l1 * sin(th1)
-    ym = yb - self.l1 * cos(th1)
+    xm = xb + self.l1 * sym.sin(th1)
+    ym = yb - self.l1 * sym.cos(th1)
 
     end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]])
 
@@ -236,6 +236,7 @@ class QuadrotorPendulum(VectorSystem):
     # Nominal input
     return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
   
+  """
   def add_initial_state_constraint(self, prog, x, x_curr):
     # TODO: impose initial state constraint.
     # Use AddBoundingBoxConstraint
@@ -309,6 +310,7 @@ class QuadrotorPendulum(VectorSystem):
     # is the variable you want
 
     return u_mpc + self.u_d()
+    """
 
   def compute_lqr_feedback(self, x_current):
     '''
