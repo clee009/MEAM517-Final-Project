@@ -12,7 +12,7 @@ from scipy.linalg import solve_continuous_are
 from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
 
-from pydrake.all import VectorSystem, inverse, MonomialBasis, OddDegreeMonomialBasis, Variables
+from pydrake.all import VectorSystem, inv, MonomialBasis, OddDegreeMonomialBasis, Variables
 
 # Define a system to calculate the continuous dynamics
 # of the quadrotor pendulum.
