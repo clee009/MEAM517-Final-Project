@@ -116,15 +116,15 @@ class QuadrotorPendulum(VectorSystem):
   # u to the input range.
   def evaluate_f(self, u, x, throw_when_limits_exceeded=False):
     # Bound inputs
-    if throw_when_limits_exceeded and abs(u[0]) > self.input_max:
-      raise ValueError("You commanded an out-of-range input of u=%f" % (u[0]))
-    else:
-      u[0] = max(-self.input_max, min(self.input_max, u[0]))
+    # if throw_when_limits_exceeded and abs(u[0]) > self.input_max:
+    #   raise ValueError("You commanded an out-of-range input of u=%f" % (u[0]))
+    # else:
+    #   u[0] = max(-self.input_max, min(self.input_max, u[0]))
     
-    if throw_when_limits_exceeded and abs(u[1]) > self.input_max:
-      raise ValueError("You commanded an out-of-range input of u=%f" % (u[1]))
-    else:
-      u[1] = max(-self.input_max, min(self.input_max, u[1]))
+    # if throw_when_limits_exceeded and abs(u[1]) > self.input_max:
+    #   raise ValueError("You commanded an out-of-range input of u=%f" % (u[1]))
+    # else:
+    #   u[1] = max(-self.input_max, min(self.input_max, u[1]))
 
     # Use the manipulator equation to get qdd.
     q = x[0:4]
