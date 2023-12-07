@@ -23,7 +23,7 @@ class Obstacles:
         yl = points[:,1].min()
         yh = points[:,1].max()
         for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
-            is_outside = (x_min >= xh or x_max <= xl) and (y_min >= yh or y_max <= yl)
+            is_outside = x_min >= xh or x_max <= xl or y_min >= yh or y_max <= yl
             #is_inside = x_min < xl and xh < x_max and y_min < yl and yh < y_max
             if i == 0:
                 if is_outside:

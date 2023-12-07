@@ -33,7 +33,11 @@ class PathPlannerLQRRT:
     
 
     def is_feasible(self, x, u):
+        if (u > self.quad.input_max).any() or (u < self.quad.input_min).any():
+            return False
+            
         ends = self.quad.get_ends(x)
+        #return self.obs.is_feasible(ends)
         for i, (x_min, y_min, x_max, y_max) in enumerate(self.obs.boxes):
             for xe, ye in ends:
                 if i==0: 
