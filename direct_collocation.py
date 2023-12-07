@@ -31,8 +31,8 @@ def direct_collocation(quadrotor, obstacles, N, x_i, u_i, dt):
     boundary, boxes = obstacles.get_world()
 
     num_t_step = N
-    min_t_step = dt / 2
-    max_t_step = 1.5 * dt
+    min_t_step = dt
+    max_t_step = dt
 
     dircol = DirectCollocation(quadrotor, context, num_t_step, min_t_step, max_t_step)
 
