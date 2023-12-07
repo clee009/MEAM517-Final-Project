@@ -153,9 +153,9 @@ class PathPlannerLQRRT:
         return xrand
     
 
-    def get_planner(self, x0, goal):
+    def get_planner(self):
         self.accessible = len(self.obs.regions) * [False]
-        self.record_state(x0)
+        self.record_state(self.x0)
 
         ################################################# PLAN
 
@@ -166,7 +166,11 @@ class PathPlannerLQRRT:
         planner = lqrrt.Planner(self.dynamics, self.lqr, constraints, error_tol=self.epsilon, 
                                 horizon=self.horizon, dt=self.dt, erf=self.erf, 
                                 min_time=0, max_time=self.max_time, max_nodes=self.max_node,
-                                goal0=goal, printing=True)
-        planner.update_plan(x0, self._get_sampling_space(), goal_bias=self.goal_bias, record_state=self.record_state, 
-                            xrand_gen=self.xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
+                                goal0=self.xf, printing=True)
+        
+        xrand_gen = self.xrand_gen if self.use_segment else None
+        record_state = self.record_state if self.use_segment else None
+
+        planner.update_plan(self.x0, self._get_sampling_space(), goal_bias=self.goal_bias, record_state=record_state, 
+                            xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
         return planner
