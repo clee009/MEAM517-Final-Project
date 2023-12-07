@@ -3,7 +3,7 @@ from pydrake.all import MathematicalProgram, Solve
 import pydrake.symbolic as sym
 from obstacles import Obstacles
 
-def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory, obstacles):
+def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory, obstacles):
     """
     Optimizes the trajectory for a quadrotor with a pendulum using an initial guess.
 
@@ -19,7 +19,6 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, T, N, initial_trajectory, 
     Returns:
     np.array, np.array: Optimized states and controls.
     """
-    dt = T / N  # Time step
     initial_states, initial_controls = initial_trajectory
 
     x0 = initial_states[0]
