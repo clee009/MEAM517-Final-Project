@@ -28,13 +28,10 @@ class PathPlannerLQRRT:
 
         self.x0 = np.array(self.x0)
         self.xf = np.array(self.xf)
-        self.reset_accessibilities(self.x0)
 
 
-    def reset_accessibilities(self, x0):
-        self.accessible = len(self.obs.regions) * [False]
-
-        for i in self.obs.get_region_ids(x0):
+    def record_state(self, x):
+        for i in self.obs.get_region_ids(x):
             self.accessible[i] = True
 
 
@@ -142,11 +139,14 @@ class PathPlannerLQRRT:
                     if adj_id != -1 and self.accessible[j]:
                         adj_ids.add(adj_id)
 
+            if not adj_ids:
+                continue
+
             adj_ids = list(adj_ids)
             weights = [self.obs.adj_areas[idx] for idx in adj_ids]
             alpha = 1. / sum(weights)
             weights = [w * alpha for w in weights]
-            adj_id = random.choices(population = adj_ids, weights = weights)
+            adj_id = random.choices(population = adj_ids, weights = weights)[0]
 
             x_min, y_min, x_max, y_max = self.obs.adj_boxes[adj_id]
             while True:
@@ -159,7 +159,8 @@ class PathPlannerLQRRT:
     
 
     def get_planner(self, x0, goal):
-        self.reset_accessibilities(x0)
+        self.accessible = len(self.obs.regions) * [False]
+        self.record_state(x0)
 
         ################################################# PLAN
 
@@ -171,5 +172,6 @@ class PathPlannerLQRRT:
                                 horizon=self.horizon, dt=self.dt, erf=self.erf, 
                                 min_time=0, max_time=self.max_time, max_nodes=self.max_node,
                                 goal0=goal, printing=True)
-        planner.update_plan(x0, self._get_sampling_space(), goal_bias=self.goal_bias, xrand_gen=None, finish_on_goal=False, u_d=self.quad.u_d())
+        planner.update_plan(x0, self._get_sampling_space(), goal_bias=self.goal_bias, record_state=self.record_state, 
+                            xrand_gen=self.xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
         return planner
