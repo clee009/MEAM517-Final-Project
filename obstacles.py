@@ -10,6 +10,29 @@ class Obstacles:
             setattr(self, key, value)
 
         self.regions = self._convex_segmentation()
+        n = len(self.regions)
+
+        self.adj_boxes = []
+        self.adj_areas = []
+        self.adj_table = [n * [-1] for _ in range(n)]
+
+        for i, (xi_min, yi_min, xi_max, yi_max) in enumerate(self.regions): 
+            for j, (xj_min, yj_min, xj_max, yj_max) in enumerate(self.regions): 
+                if i <= j:
+                    continue
+
+                x_min = max(xi_min, xj_min) - self.epsilon
+                y_min = max(yi_min, yj_min) - self.epsilon
+                x_max = min(xi_max, xj_max) + self.epsilon
+                y_max = min(yi_max, yj_max) + self.epsilon
+
+                if x_min < x_max and y_min < y_max:
+                    area = (x_min - x_max) * (y_min - y_max)
+                    if area > 2 * self.epsilon ** 2:
+                        idx = len(self.adj_boxes)
+                        self.adj_table[i][j] = self.adj_table[j][i] = idx
+                        self.adj_areas.append(area)
+                        self.adj_boxes.append((x_min, y_min, x_max, y_max))
 
     
     def get_region_ids(self, x):
@@ -17,7 +40,7 @@ class Obstacles:
 
         xe, ye = x[:2]
         eps = self.epsilon
-        for i, (x_min, y_min, x_max, y_max) in self.regions:
+        for i, (x_min, y_min, x_max, y_max) in enumerate(self.regions):
             if (x_min - eps) < xe < (x_max + eps) and (y_min - eps) < ye < (y_max + eps):
                 region_ids.append(i)
 
@@ -54,9 +77,9 @@ class Obstacles:
         regions = []
         for x_min, x_max in zip(x_lines, x_lines[1:]):
             for y_min, y_max in zip(y_lines, y_lines[1:]):
-                box = [x_min, y_min, x_max, y_max]
-                if box not in self.boxes:
-                    regions.append(box)
+                centroid = np.array([[x_min + x_max, y_min + y_max]]) / 2
+                if self.is_feasible(centroid):
+                    regions.append([x_min, y_min, x_max, y_max])
 
         return regions
 
@@ -82,7 +105,6 @@ class Obstacles:
     def plot(self, ax: plt.Axes, plot_segs=False):
         lines = []
         boxes = self.regions if plot_segs else self.boxes
-        colors = ['k','b','y','g','r']
         for i, (x_min, y_min, x_max, y_max) in enumerate(boxes):
             if i==0: #world boundary
                 linewidth = 4
@@ -93,8 +115,7 @@ class Obstacles:
             else:
                 w = x_max - x_min
                 h = y_max - y_min
-                idx = i % len(colors)
-                line = ax.add_patch(Rectangle((x_min, y_min), w, h, facecolor=colors[idx]))
+                line = ax.add_patch(Rectangle((x_min, y_min), w, h, alpha = i / len(boxes)))
                 lines.append(line)
 
         return lines

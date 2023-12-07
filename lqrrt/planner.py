@@ -236,10 +236,11 @@ class Planner:
 
             # Random sample state
             xrand = xrand_gen(self)
-            self.samples.append(xrand)
+            #self.samples.append(xrand)
             
 
             # The "nearest" node to xrand has the least cost-to-go of all nodes
+            costs = np.argsort(self._costs_to_go(xrand))
             if pruning:
                 nearestIDs = np.argsort(self._costs_to_go(xrand))
                 nearestID = nearestIDs[0]
