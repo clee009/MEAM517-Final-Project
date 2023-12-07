@@ -1,28 +1,24 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 from obstacles import Obstacles
-
-from quadrotor_with_pendulum import QuadrotorPendulum
-
 from pydrake.all import (
     DiagramBuilder, Simulator, FindResourceOrThrow, MultibodyPlant, PiecewisePolynomial, SceneGraph,
     Parser, JointActuatorIndex, MathematicalProgram, Solve, DirectCollocation
 )
 
-import kinematic_constraints
-import dynamics_constraints
-importlib.reload(kinematic_constraints)
-importlib.reload(dynamics_constraints)
-from kinematic_constraints import (
-    AddFinalLandingPositionConstraint
-)
-from dynamics_constraints import (
-    AddCollocationConstraints,
-    EvaluateDynamics
-)
+# import kinematic_constraints
+# import dynamics_constraints
+# importlib.reload(kinematic_constraints)
+# importlib.reload(dynamics_constraints)
+# from kinematic_constraints import (
+#     AddFinalLandingPositionConstraint
+# )
+# from dynamics_constraints import (
+#     AddCollocationConstraints,
+#     EvaluateDynamics
+# )
 
-def direct_collocation(quadrotor, obstacles, N, x_i, u_i):
+def direct_collocation(quadrotor, obstacles, N, x_i, u_i, dt):
     """
     Given quadrotor model, obstacles, number of collocation points, initial trajectory,
     and 
@@ -31,9 +27,12 @@ def direct_collocation(quadrotor, obstacles, N, x_i, u_i):
     context = quadrotor.CreateDefaultContext()
     boundary, boxes = obstacles.get_world()
 
+    print('context = ', context)
+    print("Continuous state size:", context.get_continuous_state_vector().size())
+
     num_t_step = N
-    min_t_step = 0.05
-    max_t_step = 0.2
+    min_t_step = dt
+    max_t_step = dt
 
     dircol = DirectCollocation(quadrotor, context, num_t_step, min_t_step, max_t_step)
 
