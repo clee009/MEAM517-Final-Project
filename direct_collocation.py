@@ -30,6 +30,8 @@ def direct_collocation(quadrotor, obstacles, N, x_i, u_i, dt):
     context = quadrotor.CreateDefaultContext()
     boundary, boxes = obstacles.get_world()
 
+    print('context = ', context)
+
     num_t_step = N
     min_t_step = dt
     max_t_step = dt
