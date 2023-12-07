@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.linalg import inv
 from numpy.linalg import cholesky
-from sym import sin, cos
 import math
 from scipy.interpolate import interp1d
 from scipy.integrate import ode
