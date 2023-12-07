@@ -18,6 +18,7 @@ class Animation:
         self.drone_width = quad.lb
         self.pendu_width = quad.l1
     
+    
     def set_trajectory(self, traj):
         self.traj = traj
 

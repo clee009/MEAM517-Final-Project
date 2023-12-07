@@ -263,8 +263,9 @@ class QuadrotorPendulum(VectorSystem):
 
     for xk, uk in zip(x, u):
       xe = xk - xf
+      ue = uk - uf
       cost += xe.T @ self.Q @ xe
-      cost += uk.T @ self.R @ uk
+      cost += ue.T @ self.R @ ue
     
     prog.AddQuadraticCost(cost)
 

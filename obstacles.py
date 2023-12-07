@@ -41,3 +41,13 @@ class Obstacles:
     
     def add_constraints(self, prog):
         pass
+
+
+    def get_world(self):
+        window = []
+        for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
+            if i==0: #world boundary
+                boundary = [x_min, y_min, x_max, y_max]
+            else:
+                window.append([x_min, y_min, x_max, y_max])
+        return boundary, window
