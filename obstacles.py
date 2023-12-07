@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import numpy as np
 
 import configs
 
@@ -33,6 +34,41 @@ class Obstacles:
                 return False
             
         return True
+    
+    def is_feasible_continuous(self, points):
+        """
+        Returns a continuous measure of feasibility with respect to obstacle avoidance.
+
+        Parameters:
+        points (np.array): Array of points representing parts of the quadrotor (e.g., tips).
+        boxes (list of tuples): List of obstacle boxes, each defined as (x_min, y_min, x_max, y_max).
+
+        Returns:
+        float: A continuous measure of feasibility. Positive values indicate safe distances from obstacles,
+            while negative values indicate violations of obstacle constraints.
+        """
+        min_distance = float('inf')  # Initialize with a large positive number
+
+        for point in points:
+            for box in self.boxes:
+                x_min, y_min, x_max, y_max = box
+
+                # Calculate distance from the point to the box edges
+                dx = max(x_min - point[0], 0, point[0] - x_max)
+                dy = max(y_min - point[1], 0, point[1] - y_max)
+
+                # Euclidean distance to the nearest edge of the box
+                distance_to_box = np.sqrt(dx**2 + dy**2)
+
+                # Update the minimum distance to any obstacle
+                min_distance = min(min_distance, distance_to_box)
+
+        # Define a threshold distance under which we consider the point to be too close
+        safety_threshold = 0.05  # This can be adjusted based on the specific requirements
+
+        # Feasibility measure: distance minus the threshold
+        # Positive when safely away from obstacles, negative when too close or inside an obstacle
+        return min_distance - safety_threshold
 
 
     def plot(self, ax: plt.Axes):
