@@ -1,20 +1,87 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-
+import numpy as np
 import configs
 
 
 class Obstacles:
     def __init__(self, file: str):
-        self.boxes = []
+        for key, value in configs.load_yaml(file).items():
+            setattr(self, key, value)
 
-        
-        data = configs.load_yaml(file)
-        self.boxes.append(data["boundary"])
-        self.boxes += data["obstacles"]
+        self.regions = self._convex_segmentation()
+        n = len(self.regions)
 
-        for i, box in enumerate(self.boxes):
-            assert len(box) == 4 and "wrong datasize at obstacle %d" % i
+        self.adj_boxes = []
+        self.adj_areas = []
+        self.adj_table = [n * [-1] for _ in range(n)]
+
+        for i, (xi_min, yi_min, xi_max, yi_max) in enumerate(self.regions): 
+            for j, (xj_min, yj_min, xj_max, yj_max) in enumerate(self.regions): 
+                if i <= j:
+                    continue
+
+                x_min = max(xi_min, xj_min) - self.epsilon
+                y_min = max(yi_min, yj_min) - self.epsilon
+                x_max = min(xi_max, xj_max) + self.epsilon
+                y_max = min(yi_max, yj_max) + self.epsilon
+
+                if x_min < x_max and y_min < y_max:
+                    area = (x_min - x_max) * (y_min - y_max)
+                    if area > 2 * self.epsilon ** 2:
+                        idx = len(self.adj_boxes)
+                        self.adj_table[i][j] = self.adj_table[j][i] = idx
+                        self.adj_areas.append(area)
+                        self.adj_boxes.append((x_min, y_min, x_max, y_max))
+
+    
+    def get_region_ids(self, x):
+        region_ids = []
+
+        xe, ye = x[:2]
+        eps = self.epsilon
+        for i, (x_min, y_min, x_max, y_max) in enumerate(self.regions):
+            if (x_min - eps) < xe < (x_max + eps) and (y_min - eps) < ye < (y_max + eps):
+                region_ids.append(i)
+
+        return region_ids
+    
+
+    def _get_sample_space(self):
+        x_min, y_min, x_max, y_max = self.boxes[0]
+        sample_space = np.zeros((8,2))
+        sample_space[:,0] = -np.pi/2
+        sample_space[:,1] =  np.pi/2
+
+        sample_space[0,0] = x_min
+        sample_space[0,1] = x_max
+        sample_space[1,0] = y_min
+        sample_space[1,1] = y_max
+        sample_space[4:,1] = np.array(self.vel_span)
+        sample_space[4:,0] = -sample_space[4:,1]
+        return sample_space
+
+
+    def _convex_segmentation(self):
+        x_lines = set()
+        y_lines = set()
+        for x_min, y_min, x_max, y_max in self.boxes:
+            x_lines.add(x_min)
+            x_lines.add(x_max)
+            y_lines.add(y_min)
+            y_lines.add(y_max)
+
+        x_lines = sorted(list(x_lines))
+        y_lines = sorted(list(y_lines))
+
+        regions = []
+        for x_min, x_max in zip(x_lines, x_lines[1:]):
+            for y_min, y_max in zip(y_lines, y_lines[1:]):
+                centroid = np.array([[x_min + x_max, y_min + y_max]]) / 2
+                if self.is_feasible(centroid):
+                    regions.append([x_min, y_min, x_max, y_max])
+
+        return regions
 
 
     def is_feasible(self, points):
@@ -35,9 +102,10 @@ class Obstacles:
         return True
 
 
-    def plot(self, ax: plt.Axes):
+    def plot(self, ax: plt.Axes, plot_segs=False):
         lines = []
-        for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
+        boxes = self.regions if plot_segs else self.boxes
+        for i, (x_min, y_min, x_max, y_max) in enumerate(boxes):
             if i==0: #world boundary
                 linewidth = 4
                 lines += ax.plot([x_min, x_max], [y_min, y_min], 'orange', linewidth=linewidth)
@@ -47,14 +115,10 @@ class Obstacles:
             else:
                 w = x_max - x_min
                 h = y_max - y_min
-                line = ax.add_patch(Rectangle((x_min, y_min), w, h))
+                line = ax.add_patch(Rectangle((x_min, y_min), w, h, alpha = i / len(boxes)))
                 lines.append(line)
 
         return lines
-
-    
-    def add_constraints(self, prog):
-        pass
 
 
     def get_world(self):
