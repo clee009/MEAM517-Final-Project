@@ -58,29 +58,25 @@ class QuadrotorPendulum(VectorSystem):
         [[self.mb + self.m1, 0., 0., self.m1*self.l1*cos(q[3])],
           [0., self.mb + self.m1, 0., self.m1*self.l1*sin(q[3])],
           [0., 0., self.Ib, 0.],
-          [self.m1*self.l1*cos(q[3]), self.m1*self.l1*sin(q[3]), 0., self.I1 + self.m1*self.l1**2]],
-          dtype=AutoDiffXd)
+          [self.m1*self.l1*cos(q[3]), self.m1*self.l1*sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
     
     C = np.array(
         [[0., 0., 0., -self.m1*self.l1*sin(q[3])*qd[3]],
           [0., 0., 0., self.m1*self.l1*cos(q[3])*qd[3]],
           [0., 0., 0., 0.],
-          [0., 0., 0., 0.]],
-          dtype=AutoDiffXd)
+          [0., 0., 0., 0.]])
     
     tauG = np.array(
         [[0.],
           [-(self.m1+self.mb)*self.g],
           [0.],
-          [-self.m1*self.l1*self.g*sin(q[3])]],
-          dtype=AutoDiffXd)
+          [-self.m1*self.l1*self.g*sin(q[3])]])
     
     B = np.array(
         [[-sin(q[2]), -sin(q[2])],
           [cos(q[2]), cos(q[2])],
           [-self.lb, self.lb],
-          [0., 0.]],
-          dtype=AutoDiffXd)
+          [0., 0.]])
     
     return (M, C, tauG, B)
   
@@ -109,7 +105,7 @@ class QuadrotorPendulum(VectorSystem):
     xm = xb + self.l1 * sin(th1)
     ym = yb - self.l1 * cos(th1)
 
-    end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]], dtype=AutoDiffXd)
+    end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]])
 
     return end_pos
 
@@ -181,9 +177,9 @@ class QuadrotorPendulum(VectorSystem):
     q = x_f[0:4]
     qd = x_f[4:8]
 
-    A = np.zeros((8, 8), dtype=AutoDiffXd)
-    B = np.zeros((8, 2), dtype=AutoDiffXd)
-    C = np.zeros((8, 1), dtype=AutoDiffXd)
+    A = np.zeros((8, 8))
+    B = np.zeros((8, 2))
+    C = np.zeros((8, 1))
     
     alpha = self.m1*self.l1/(self.m1+self.mb)
     I = self.I1 + self.m1*self.mb*self.l1**2/(self.m1+self.mb)
@@ -228,7 +224,7 @@ class QuadrotorPendulum(VectorSystem):
     A_c, B_c = self.GetLinearizedDynamics(u_f, x_f)
 
     # Discretize the linearized dynamics
-    I = np.identity(len(x_f), dtype=AutoDiffXd)  # Identity matrix
+    I = np.identity(len(x_f))  # Identity matrix
     A_d = I + A_c * T
     B_d = B_c * T
 
@@ -236,11 +232,11 @@ class QuadrotorPendulum(VectorSystem):
   
   def x_d(self):
     # Nominal state
-    return np.array([5, 2, 0, 0, 0, 0, 0, 0], dtype=AutoDiffXd)
+    return np.array([5, 2, 0, 0, 0, 0, 0, 0])
 
   def u_d(self):
     # Nominal input
-    return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2], dtype=AutoDiffXd)
+    return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
 
   def compute_lqr_feedback(self, x_current):
     '''

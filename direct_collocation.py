@@ -1,9 +1,6 @@
 import numpy as np
 import importlib
 from obstacles import Obstacles
-
-from quadrotor_with_pendulum import QuadrotorPendulum
-
 from pydrake.all import (
     DiagramBuilder, Simulator, FindResourceOrThrow, MultibodyPlant, PiecewisePolynomial, SceneGraph,
     Parser, JointActuatorIndex, MathematicalProgram, Solve, DirectCollocation
