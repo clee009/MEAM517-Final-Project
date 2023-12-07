@@ -135,7 +135,7 @@ class QuadrotorPendulum(VectorSystem):
     # to vectors.
     # qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
 
-    qdd = inverse(M) @ (tauG[:, 0] + B @ u - C @ qd)
+    qdd = inv(M) @ (tauG[:, 0] + B @ u - C @ qd)
 
     # print('evaluate_f output =', np.hstack([qd, qdd]))
 
