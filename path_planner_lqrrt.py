@@ -120,40 +120,35 @@ class PathPlannerLQRRT:
     
 
     def xrand_gen(self, planner):
-        for _ in range(60):
-            xrand = self.sample_means + self.sample_spans * (np.random.sample(8)-0.5)
-            for i, choice in enumerate(np.greater(self.goal_bias, np.random.sample())):
-                if choice:
-                    xrand[i] = self.xf[i]
-
-            if not self.is_feasible(xrand, np.zeros(2)):
-                continue
-
-            region_ids = self.obs.get_region_ids(xrand)
-            if any(self.accessible[idx] for idx in region_ids):
-                return xrand
-            
+        while True:
             adj_ids = set() #find all adj
-            for i in region_ids:
+            for i, accessible in enumerate(self.accessible):
+                if not accessible:
+                    continue
+
                 for j, adj_id in enumerate(self.obs.adj_table[i]):
-                    if adj_id != -1 and self.accessible[j]:
+                    if adj_id != -1 and not self.accessible[j]:
                         adj_ids.add(adj_id)
 
-            if not adj_ids:
-                continue
-
+            assert adj_ids
             adj_ids = list(adj_ids)
+
             weights = [self.obs.adj_areas[idx] for idx in adj_ids]
             alpha = 1. / sum(weights)
             weights = [w * alpha for w in weights]
-            adj_id = random.choices(population = adj_ids, weights = weights)[0]
 
+            adj_id = random.choices(population = adj_ids, weights = weights)[0]
             x_min, y_min, x_max, y_max = self.obs.adj_boxes[adj_id]
-            while True:
-                xrand[0] = np.random.uniform(x_min, x_max)
-                xrand[1] = np.random.uniform(y_min, y_max)
-                if not self.is_feasible(xrand, np.zeros(2)):
-                    return xrand
+
+            xrand = self.sample_means + self.sample_spans * (np.random.sample(8)-0.5)
+            xrand[0] = np.random.uniform(x_min, x_max)
+            xrand[1] = np.random.uniform(y_min, y_max)
+            for i, choice in enumerate(np.greater(self.goal_bias, np.random.sample())):
+                if choice:
+                    xrand[i] = self.xf[i]
+            
+            if self.is_feasible(xrand, np.zeros(2)):
+                return xrand
                     
         return xrand
     
