@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import importlib
 from obstacles import Obstacles
@@ -10,17 +9,17 @@ from pydrake.all import (
     Parser, JointActuatorIndex, MathematicalProgram, Solve, DirectCollocation
 )
 
-import kinematic_constraints
-import dynamics_constraints
-importlib.reload(kinematic_constraints)
-importlib.reload(dynamics_constraints)
-from kinematic_constraints import (
-    AddFinalLandingPositionConstraint
-)
-from dynamics_constraints import (
-    AddCollocationConstraints,
-    EvaluateDynamics
-)
+# import kinematic_constraints
+# import dynamics_constraints
+# importlib.reload(kinematic_constraints)
+# importlib.reload(dynamics_constraints)
+# from kinematic_constraints import (
+#     AddFinalLandingPositionConstraint
+# )
+# from dynamics_constraints import (
+#     AddCollocationConstraints,
+#     EvaluateDynamics
+# )
 
 def direct_collocation(quadrotor, obstacles, N, x_i, u_i, dt):
     """
