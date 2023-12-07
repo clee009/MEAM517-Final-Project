@@ -38,7 +38,7 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory,
     for i in range(N):
         # Add dynamic constraints
         x_next = x_vars[i] + dt * quadrotor_pendulum.evaluate_f(u_vars[i], x_vars[i])
-        prog.AddEqualityConstraint(x_vars[i + 1], x_next)
+        prog.AddLinearEqualityConstraint(x_vars[i + 1], x_next)
 
         # Add obstacle avoidance constraints
         tip_pos = quadrotor_pendulum.get_ends(x_vars[i])
