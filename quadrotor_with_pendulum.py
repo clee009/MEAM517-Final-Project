@@ -183,35 +183,35 @@ class QuadrotorPendulum(VectorSystem):
     alpha = self.m1*self.l1/(self.m1+self.mb)
     I = self.I1 + self.m1*self.mb*self.l1**2/(self.m1+self.mb)
     
-    B[4,0] = -1/(self.m1+self.mb)*sym.sin(q[2]) + alpha**2/I*sym.cos(q[3])*sym.sin(q[3]-q[2])
+    B[4,0] = -1/(self.m1+self.mb)*math.sin(q[2]) + alpha**2/I*math.cos(q[3])*math.sin(q[3]-q[2])
     B[4,1] = B[4,0]
     
-    B[5,0] = (self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*sym.cos(q[2]) - alpha**2/I*sym.cos(q[3])*sym.cos(q[3]-q[2])
+    B[5,0] = (self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*math.cos(q[2]) - alpha**2/I*math.cos(q[3])*math.cos(q[3]-q[2])
     B[5,1] = B[5,0]
     
     B[6,0] = -self.lb/self.Ib
     B[6,1] = self.lb/self.Ib
     
-    B[7,0] = -alpha/I*sym.sin(q[3]-q[2])
-    B[7,1] = -alpha/I*sym.sin(q[3]-q[2])
+    B[7,0] = -alpha/I*math.sin(q[3]-q[2])
+    B[7,1] = -alpha/I*math.sin(q[3]-q[2])
     
     A[:4,4:] = np.diag(np.ones(4))
     
-    A[4,2] = (-1/(self.m1+self.mb)*sym.cos(q[2])-alpha**2/I*sym.cos(q[3])*sym.cos(q[3]-q[2]))*(u_f[0]+u_f[1])
-    A[5,2] = (-(self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*sym.sin(q[2])-alpha**2/I*sym.cos(q[3])*sym.sin(q[3]-q[2]))*(u_f[0]+u_f[1])
+    A[4,2] = (-1/(self.m1+self.mb)*math.cos(q[2])-alpha**2/I*math.cos(q[3])*math.cos(q[3]-q[2]))*(u_f[0]+u_f[1])
+    A[5,2] = (-(self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*math.sin(q[2])-alpha**2/I*math.cos(q[3])*math.sin(q[3]-q[2]))*(u_f[0]+u_f[1])
     
-    A[4,3] = alpha*sym.cos(q[3])*qd[3]**2+alpha**2/I*sym.cos(2.*q[3]-q[2])*(u_f[0]+u_f[1])
-    A[5,3] = alpha*sym.sin(q[3])*qd[3]**2+alpha**2/I*sym.sin(2.*q[3]-q[2])*(u_f[0]+u_f[1])
-    A[4,7] = 2.*alpha*sym.sin(q[3])*qd[3]
-    A[5,7] = -2.*alpha*sym.cos(q[3])*qd[3]
+    A[4,3] = alpha*math.cos(q[3])*qd[3]**2+alpha**2/I*math.cos(2.*q[3]-q[2])*(u_f[0]+u_f[1])
+    A[5,3] = alpha*math.sin(q[3])*qd[3]**2+alpha**2/I*math.sin(2.*q[3]-q[2])*(u_f[0]+u_f[1])
+    A[4,7] = 2.*alpha*math.sin(q[3])*qd[3]
+    A[5,7] = -2.*alpha*math.cos(q[3])*qd[3]
 
-    A[7,2] = alpha/I*sym.cos(q[3]-q[2])*(u_f[0]+u_f[1])
-    A[7,3] = -alpha/I*sym.cos(q[3]-q[2])*(u_f[0]+u_f[1])
+    A[7,2] = alpha/I*math.cos(q[3]-q[2])*(u_f[0]+u_f[1])
+    A[7,3] = -alpha/I*math.cos(q[3]-q[2])*(u_f[0]+u_f[1])
     
-    C[4] = alpha*sym.sin(q[3])*qd[3]**2+(-1/(self.m1+self.mb)*sym.sin(q[2]) + alpha**2/I*sym.cos(q[3])*sym.sin(q[3]-q[2]))*(u_f[0]+u_f[1])
-    C[5] = -alpha*sym.cos(q[3])*qd[3]**2-self.g+((self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*sym.cos(q[2])-alpha**2/I*sym.cos(q[3])*sym.cos(q[3]-q[2]))*(u_f[0]+u_f[1])
+    C[4] = alpha*math.sin(q[3])*qd[3]**2+(-1/(self.m1+self.mb)*math.sin(q[2]) + alpha**2/I*math.cos(q[3])*math.sin(q[3]-q[2]))*(u_f[0]+u_f[1])
+    C[5] = -alpha*math.cos(q[3])*qd[3]**2-self.g+((self.I1+self.m1*self.l1**2)/(self.m1+self.mb)/I*math.cos(q[2])-alpha**2/I*math.cos(q[3])*math.cos(q[3]-q[2]))*(u_f[0]+u_f[1])
     C[6] = (-u_f[0]+u_f[1])/self.Ib
-    C[7] = -alpha/I*sym.sin(q[3]-q[2])*(u_f[0]+u_f[1])
+    C[7] = -alpha/I*math.sin(q[3]-q[2])*(u_f[0]+u_f[1])
     
     return (A, B)
   
