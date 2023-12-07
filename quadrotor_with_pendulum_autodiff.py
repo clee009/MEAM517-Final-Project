@@ -10,6 +10,7 @@ from scipy.integrate import solve_ivp
 from scipy.linalg import expm
 from scipy.linalg import solve_continuous_are
 
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
 
@@ -57,25 +58,29 @@ class QuadrotorPendulum(VectorSystem):
         [[self.mb + self.m1, 0., 0., self.m1*self.l1*cos(q[3])],
           [0., self.mb + self.m1, 0., self.m1*self.l1*sin(q[3])],
           [0., 0., self.Ib, 0.],
-          [self.m1*self.l1*cos(q[3]), self.m1*self.l1*sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
+          [self.m1*self.l1*cos(q[3]), self.m1*self.l1*sin(q[3]), 0., self.I1 + self.m1*self.l1**2]],
+          dtype=AutoDiffXd)
     
     C = np.array(
         [[0., 0., 0., -self.m1*self.l1*sin(q[3])*qd[3]],
           [0., 0., 0., self.m1*self.l1*cos(q[3])*qd[3]],
           [0., 0., 0., 0.],
-          [0., 0., 0., 0.]])
+          [0., 0., 0., 0.]],
+          dtype=AutoDiffXd)
     
     tauG = np.array(
         [[0.],
           [-(self.m1+self.mb)*self.g],
           [0.],
-          [-self.m1*self.l1*self.g*sin(q[3])]])
+          [-self.m1*self.l1*self.g*sin(q[3])]],
+          dtype=AutoDiffXd)
     
     B = np.array(
         [[-sin(q[2]), -sin(q[2])],
           [cos(q[2]), cos(q[2])],
           [-self.lb, self.lb],
-          [0., 0.]])
+          [0., 0.]],
+          dtype=AutoDiffXd)
     
     return (M, C, tauG, B)
   
@@ -104,7 +109,7 @@ class QuadrotorPendulum(VectorSystem):
     xm = xb + self.l1 * sin(th1)
     ym = yb - self.l1 * cos(th1)
 
-    end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]])
+    end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]], dtype=AutoDiffXd)
 
     return end_pos
 
@@ -175,9 +180,9 @@ class QuadrotorPendulum(VectorSystem):
     q = x_f[0:4]
     qd = x_f[4:8]
 
-    A = np.zeros((8, 8))
-    B = np.zeros((8, 2))
-    C = np.zeros((8, 1))
+    A = np.zeros((8, 8), dtype=AutoDiffXd)
+    B = np.zeros((8, 2), dtype=AutoDiffXd)
+    C = np.zeros((8, 1), dtype=AutoDiffXd)
     
     alpha = self.m1*self.l1/(self.m1+self.mb)
     I = self.I1 + self.m1*self.mb*self.l1**2/(self.m1+self.mb)
@@ -222,7 +227,7 @@ class QuadrotorPendulum(VectorSystem):
     A_c, B_c = self.GetLinearizedDynamics(u_f, x_f)
 
     # Discretize the linearized dynamics
-    I = np.identity(len(x_f))  # Identity matrix
+    I = np.identity(len(x_f), dtype=AutoDiffXd)  # Identity matrix
     A_d = I + A_c * T
     B_d = B_c * T
 
@@ -230,85 +235,11 @@ class QuadrotorPendulum(VectorSystem):
   
   def x_d(self):
     # Nominal state
-    return np.array([5, 2, 0, 0, 0, 0, 0, 0])
+    return np.array([5, 2, 0, 0, 0, 0, 0, 0], dtype=AutoDiffXd)
 
   def u_d(self):
     # Nominal input
-    return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
-  
-  def add_initial_state_constraint(self, prog, x, x_curr):
-    # TODO: impose initial state constraint.
-    # Use AddBoundingBoxConstraint
-    prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
-
-  def add_input_saturation_constraint(self, prog, x, u, N):
-    # TODO: impose input limit constraint.
-    # Use AddBoundingBoxConstraint
-    # The limits are available through self.umin and self.umax
-    for uk in u:
-      ones = np.ones_like(uk)
-      prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_d(), self.input_max * ones - self.u_d(), uk)
-
-  def add_dynamics_constraint(self, prog, x, u, N, T):
-    # TODO: impose dynamics constraint.
-    # Use AddLinearEqualityConstraint(expr, value)
-    A, B = self.discrete_time_linearized_dynamics(T)
-    for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
-      prog.AddLinearEqualityConstraint(xk_p1 - A @ xk - B @ u[k], np.zeros_like(xk))
-
-  def add_cost(self, prog, x, u, N):
-    # TODO: add cost.
-    cost = x[-1].T @ self.Qf @ x[-1]
-    xf = self.x_d()
-    uf = self.u_d()
-
-    for xk, uk in zip(x, u):
-      xe = xk - xf
-      ue = uk - uf
-      cost += xe.T @ self.Q @ xe
-      cost += ue.T @ self.R @ ue
-    
-    prog.AddQuadraticCost(cost)
-
-  def compute_mpc_feedback(self, x_current, use_clf=False):
-    '''
-    This function computes the MPC controller input u
-    '''
-
-    # Parameters for the QP
-    N = 10
-    T = 0.1
-
-    # Initialize mathematical program and decalre decision variables
-    prog = MathematicalProgram()
-    x = np.zeros((N, 8), dtype="object")
-    for i in range(N):
-      x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
-    u = np.zeros((N-1, 2), dtype="object")
-    for i in range(N-1):
-      u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
-
-    # Add constraints and cost
-    self.add_initial_state_constraint(prog, x, x_current)
-    self.add_input_saturation_constraint(prog, x, u, N)
-    self.add_dynamics_constraint(prog, x, u, N, T)
-    self.add_cost(prog, x, u, N)
-
-    # Placeholder constraint and cost to satisfy QP requirements
-    # TODO: Delete after completing this function
-
-    # Solve the QP
-    solver = OsqpSolver()
-    result = solver.Solve(prog)
-    
-
-    u_mpc = result.GetSolution(u[0])
-    # TODO: retrieve the controller input from the solution of the optimization problem
-    # and use it to compute the MPC input u
-    # You should make use of result.GetSolution(decision_var) where decision_var
-    # is the variable you want
-
-    return u_mpc + self.u_d()
+    return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2], dtype=AutoDiffXd)
 
   def compute_lqr_feedback(self, x_current):
     '''
