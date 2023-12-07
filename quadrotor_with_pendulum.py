@@ -12,7 +12,7 @@ from scipy.linalg import solve_continuous_are
 from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
 
-from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Variables
+from pydrake.all import VectorSystem, inverse, MonomialBasis, OddDegreeMonomialBasis, Variables
 
 # Define a system to calculate the continuous dynamics
 # of the quadrotor pendulum.
@@ -133,7 +133,9 @@ class QuadrotorPendulum(VectorSystem):
     # Awkward slice required on tauG to get shapes to agree --
     # numpy likes to collapse the other dot products in this expression
     # to vectors.
-    qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
+    # qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
+
+    qdd = inverse(M) @ (tauG[:, 0] + B @ u - C @ qd)
 
     # print('evaluate_f output =', np.hstack([qd, qdd]))
 
