@@ -79,11 +79,11 @@ class TrajectoryOptimizer:
         # Initialize mathematical program and decalre decision variables
         prog = MathematicalProgram()
         x = np.zeros((N, 8), dtype="object")
-        # for i in range(N):
-        #     x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
+        for i in range(N):
+            x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
         u = np.zeros((N-1, 2), dtype="object")
-        # for i in range(N-1):
-        #     u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
+        for i in range(N-1):
+            u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
 
         if initial_traj is not None:
             for i in range(N):
