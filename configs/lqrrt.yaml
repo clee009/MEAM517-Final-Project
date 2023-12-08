@@ -9,4 +9,4 @@ epsilon: 0.05
 vel_span: [0.1, 0.1, 0.1, 0.1]
 x0: [2, 3, 0, 0, 0, 0, 0, 0]
 xf: [6, 3, 0, 0, 0, 0, 0, 0]
-use_segment: False
+use_segment: True

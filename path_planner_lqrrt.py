@@ -51,7 +51,7 @@ class PathPlannerLQRRT:
 
 
     def lqr(self, x, u): #lqrrt input wrapping
-        A, B = self.quad.GetLinearizedDynamics(self.quad.u_d(), x)
+        A, B = self.quad.GetLinearizedDynamics(x, self.quad.u_d())
         S = solve_continuous_are(A, B, self.Q, self.R)
         K = -self.iR @ B.T @ S
         return S, K
