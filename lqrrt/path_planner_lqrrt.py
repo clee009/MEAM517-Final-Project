@@ -1,8 +1,8 @@
 import numpy as np
 import lqrrt
 import configs
-from quadrotor_with_pendulum import QuadrotorPendulum
-from obstacles import Obstacles
+from quadrotor import QuadrotorPendulum
+from world import Obstacles
 from scipy.linalg import solve_continuous_are
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
