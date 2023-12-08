@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.linalg import inv
 from numpy.linalg import cholesky
-from math import sin, cos
 import math
 from scipy.interpolate import interp1d
 from scipy.integrate import ode
@@ -13,7 +12,7 @@ from scipy.linalg import solve_continuous_are
 from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
 
-from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Variables
+from pydrake.all import VectorSystem, inv, MonomialBasis, OddDegreeMonomialBasis, Variables
 
 # Define a system to calculate the continuous dynamics
 # of the quadrotor pendulum.
@@ -23,13 +22,14 @@ from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Var
 # the drone (mb with body lenght lb) and the first
 # link (m1 centered at l1).
 class QuadrotorPendulum(VectorSystem):
-  def __init__(self, Q, R, Qf, mb = 1., lb = 0.2, 
-                      m1 = 2., l1 = 0.2,
+  def __init__(self, Q, R, Qf, mb = 1., lb = 0.5, 
+                      m1 = 2., l1 = 0.5,
                       g = 10., input_max = 30.):
     VectorSystem.__init__(self,
         2,                           # Two input (thrust of each rotor).
         8)                           # Eight outputs (xb, yb, thetab, theta1) and its derivatives
-    # self._DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
+    
+    # self.DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
 
     self.mb = float(mb)
     self.lb = float(lb)
@@ -49,21 +49,18 @@ class QuadrotorPendulum(VectorSystem):
     self.R = R
     self.Qf = Qf
 
-    # Nominal input for linearization
-    self.u_f = np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
-
   # This method returns (M, C, tauG, B)
   # according to the dynamics of this system.
   def GetManipulatorDynamics(self, q, qd):
     M = np.array(
-        [[self.mb + self.m1, 0., 0., self.m1*self.l1*math.cos(q[3])],
-          [0., self.mb + self.m1, 0., self.m1*self.l1*math.sin(q[3])],
+        [[self.mb + self.m1, 0., 0., self.m1*self.l1*sym.cos(q[3])],
+          [0., self.mb + self.m1, 0., self.m1*self.l1*sym.sin(q[3])],
           [0., 0., self.Ib, 0.],
-          [self.m1*self.l1*math.cos(q[3]), self.m1*self.l1*math.sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
+          [self.m1*self.l1*sym.cos(q[3]), self.m1*self.l1*sym.sin(q[3]), 0., self.I1 + self.m1*self.l1**2]])
     
     C = np.array(
-        [[0., 0., 0., -self.m1*self.l1*math.sin(q[3])*qd[3]],
-          [0., 0., 0., self.m1*self.l1*math.cos(q[3])*qd[3]],
+        [[0., 0., 0., -self.m1*self.l1*sym.sin(q[3])*qd[3]],
+          [0., 0., 0., self.m1*self.l1*sym.cos(q[3])*qd[3]],
           [0., 0., 0., 0.],
           [0., 0., 0., 0.]])
     
@@ -71,11 +68,11 @@ class QuadrotorPendulum(VectorSystem):
         [[0.],
           [-(self.m1+self.mb)*self.g],
           [0.],
-          [-self.m1*self.l1*self.g*math.sin(q[3])]])
+          [-self.m1*self.l1*self.g*sym.sin(q[3])]])
     
     B = np.array(
-        [[-math.sin(q[2]), -math.sin(q[2])],
-          [math.cos(q[2]), math.cos(q[2])],
+        [[-sym.sin(q[2]), -sym.sin(q[2])],
+          [sym.cos(q[2]), sym.cos(q[2])],
           [-self.lb, self.lb],
           [0., 0.]])
     
@@ -95,16 +92,16 @@ class QuadrotorPendulum(VectorSystem):
     th1 = x[3]
 
     # Right tip of body/wing
-    xr = xb + self.lb / 2 * cos(thb)
-    yr = yb + self.lb / 2 * sin(thb)
+    xr = xb + self.lb / 2 * sym.cos(thb)
+    yr = yb + self.lb / 2 * sym.sin(thb)
 
     # Left tip of body/wing
-    xl = xb - self.lb / 2 * cos(thb)
-    yl = yb - self.lb / 2 * sin(thb)
+    xl = xb - self.lb / 2 * sym.cos(thb)
+    yl = yb - self.lb / 2 * sym.sin(thb)
 
     # Tip of pendulum
-    xm = xb + self.l1 * sin(th1)
-    ym = yb - self.l1 * cos(th1)
+    xm = xb + self.l1 * sym.sin(th1)
+    ym = yb - self.l1 * sym.cos(th1)
 
     end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]])
 
@@ -118,15 +115,15 @@ class QuadrotorPendulum(VectorSystem):
   # u to the input range.
   def evaluate_f(self, u, x, throw_when_limits_exceeded=False):
     # Bound inputs
-    if throw_when_limits_exceeded and abs(u[0]) > self.input_max:
-      raise ValueError("You commanded an out-of-range input of u=%f" % (u[0]))
-    else:
-      u[0] = max(-self.input_max, min(self.input_max, u[0]))
+    # if throw_when_limits_exceeded and abs(u[0]) > self.input_max:
+    #   raise ValueError("You commanded an out-of-range input of u=%f" % (u[0]))
+    # else:
+    #   u[0] = max(-self.input_max, min(self.input_max, u[0]))
     
-    if throw_when_limits_exceeded and abs(u[1]) > self.input_max:
-      raise ValueError("You commanded an out-of-range input of u=%f" % (u[1]))
-    else:
-      u[1] = max(-self.input_max, min(self.input_max, u[1]))
+    # if throw_when_limits_exceeded and abs(u[1]) > self.input_max:
+    #   raise ValueError("You commanded an out-of-range input of u=%f" % (u[1]))
+    # else:
+    #   u[1] = max(-self.input_max, min(self.input_max, u[1]))
 
     # Use the manipulator equation to get qdd.
     q = x[0:4]
@@ -136,44 +133,46 @@ class QuadrotorPendulum(VectorSystem):
     # Awkward slice required on tauG to get shapes to agree --
     # numpy likes to collapse the other dot products in this expression
     # to vectors.
-    qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
+    # qdd = np.dot(np.linalg.inv(M), (tauG[:, 0] + np.dot(B, u) - np.dot(C, qd)))
+
+    qdd = inv(M) @ (tauG[:, 0] + B @ u - C @ qd)
 
     # print('evaluate_f output =', np.hstack([qd, qdd]))
 
     return np.hstack([qd, qdd])
 
-#   # This method calculates the time derivative of the state,
-#   # which allows the system to be simulated forward in time.
-#   def _DoCalcVectorTimeDerivatives(self, context, u, x, xdot):
-#     q = x[0:4]
-#     qd = x[4:8]
-#     xdot[:] = self.evaluate_f(u, x, throw_when_limits_exceeded=False)
+  # This method calculates the time derivative of the state,
+  # which allows the system to be simulated forward in time.
+  def _DoCalcVectorTimeDerivatives(self, context, u, x, xdot):
+    q = x[0:4]
+    qd = x[4:8]
+    xdot[:] = self.evaluate_f(u, x, throw_when_limits_exceeded=False)
 
-#   # This method calculates the output of the system
-#   # (i.e. those things that are visible downstream of
-#   # this system) from the state. In this case, it
-#   # copies out the full state.
-#   def _DoCalcVectorOutput(self, context, u, x, y):
-#     y[:] = x
+  # This method calculates the output of the system
+  # (i.e. those things that are visible downstream of
+  # this system) from the state. In this case, it
+  # copies out the full state.
+  def _DoCalcVectorOutput(self, context, u, x, y):
+    y[:] = x
 
-#   # The Drake simulation backend is very careful to avoid
-#   # algebraic loops when systems are connected in feedback.
-#   # This system does not feed its inputs directly to its
-#   # outputs (the output is only a function of the state),
-#   # so we can safely tell the simulator that we don't have
-#   # any direct feedthrough.
-#   def _DoHasDirectFeedthrough(self, input_port, output_port):
-#     if input_port == 0 and output_port == 0:
-#       return False
-#     else:
-#       # For other combinations of i/o, we will return
-#       # "None", i.e. "I don't know."
-#       return None
+  # The Drake simulation backend is very careful to avoid
+  # algebraic loops when systems are connected in feedback.
+  # This system does not feed its inputs directly to its
+  # outputs (the output is only a function of the state),
+  # so we can safely tell the simulator that we don't have
+  # any direct feedthrough.
+  def _DoHasDirectFeedthrough(self, input_port, output_port):
+    if input_port == 0 and output_port == 0:
+      return False
+    else:
+      # For other combinations of i/o, we will return
+      # "None", i.e. "I don't know."
+      return None
 
   # The method return matrices (A) and (B) that encode the
   # linearized dynamics of this system around the fixed point
   # u_f, x_f.
-  def GetLinearizedDynamics(self, x_f, u_f):
+  def GetLinearizedDynamics(self, u_f, x_f):
     q = x_f[0:4]
     qd = x_f[4:8]
 
@@ -216,57 +215,60 @@ class QuadrotorPendulum(VectorSystem):
     
     return (A, B)
   
-  def discrete_time_linearized_dynamics(self, dt, x_f, u_f):
-    # dt is the time step for discretization
+  def discrete_time_linearized_dynamics(self, T):
+    # T is the time step for discretization
     # Get the continuous-time linearized dynamics
-    A_c, B_c = self.GetLinearizedDynamics(x_f, u_f)
+    u_f = self.u_d()  # Fixed point control input
+    x_f = self.x_d()  # Fixed point state
+    A_c, B_c = self.GetLinearizedDynamics(u_f, x_f)
 
     # Discretize the linearized dynamics
     I = np.identity(len(x_f))  # Identity matrix
-    A_d = I + A_c * dt
-    B_d = B_c * dt
+    A_d = I + A_c * T
+    B_d = B_c * T
 
     return A_d, B_d
   
-  def x_f(self):
+  def x_d(self):
     # Nominal state
     return np.array([5, 2, 0, 0, 0, 0, 0, 0])
+
+  def u_d(self):
+    # Nominal input
+    return np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
+  
   
   def add_initial_state_constraint(self, prog, x, x_curr):
     # TODO: impose initial state constraint.
     # Use AddBoundingBoxConstraint
     prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
 
-  def add_input_saturation_constraint(self, prog, u):
+  def add_input_saturation_constraint(self, prog, x, u, N):
     # TODO: impose input limit constraint.
     # Use AddBoundingBoxConstraint
     # The limits are available through self.umin and self.umax
     for uk in u:
       ones = np.ones_like(uk)
-      prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_f, self.input_max * ones - self.u_f, uk)
+      prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_d(), self.input_max * ones - self.u_d(), uk)
 
-  def add_dynamics_constraint(self, prog, x, u, dt):
+  def add_dynamics_constraint(self, prog, x, u, N, T):
     # TODO: impose dynamics constraint.
     # Use AddLinearEqualityConstraint(expr, value)
-
+    A, B = self.discrete_time_linearized_dynamics(T)
     for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
-      A, B = self.discrete_time_linearized_dynamics(dt, xk_p1, self.u_f)
       prog.AddLinearEqualityConstraint(xk_p1 - A @ xk - B @ u[k], np.zeros_like(xk))
 
-  def add_cost(self, prog, x, u):
+  def add_cost(self, prog, x, u, N):
     # TODO: add cost.
     cost = x[-1].T @ self.Qf @ x[-1]
-    i = 1
+    xf = self.x_d()
+    uf = self.u_d()
 
     for xk, uk in zip(x, u):
-        xf = x[i]
-        xe = xk - xf
-        ue = uk - self.u_f
-
-        cost += xe.T @ self.Q @ xe
-        cost += ue.T @ self.R @ ue
-        
-        i += 1
+      xe = xk - xf
+      ue = uk - uf
+      cost += xe.T @ self.Q @ xe
+      cost += ue.T @ self.R @ ue
     
     prog.AddQuadraticCost(cost)
 
@@ -277,7 +279,7 @@ class QuadrotorPendulum(VectorSystem):
 
     # Parameters for the QP
     N = 10
-    dt = 0.1
+    T = 0.1
 
     # Initialize mathematical program and decalre decision variables
     prog = MathematicalProgram()
@@ -290,9 +292,9 @@ class QuadrotorPendulum(VectorSystem):
 
     # Add constraints and cost
     self.add_initial_state_constraint(prog, x, x_current)
-    self.add_input_saturation_constraint(prog, u)
-    self.add_dynamics_constraint(prog, x, u, dt)
-    self.add_cost(prog, x, u)
+    self.add_input_saturation_constraint(prog, x, u, N)
+    self.add_dynamics_constraint(prog, x, u, N, T)
+    self.add_cost(prog, x, u, N)
 
     # Placeholder constraint and cost to satisfy QP requirements
     # TODO: Delete after completing this function
@@ -308,7 +310,8 @@ class QuadrotorPendulum(VectorSystem):
     # You should make use of result.GetSolution(decision_var) where decision_var
     # is the variable you want
 
-    return u_mpc + self.u_f
+    return u_mpc + self.u_d()
+    
 
   def compute_lqr_feedback(self, x_current):
     '''

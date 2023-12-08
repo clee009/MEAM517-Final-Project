@@ -1,90 +1,86 @@
 import numpy as np
-from pydrake.all import MathematicalProgram, Solve
+import matplotlib.pyplot as plt
+from numpy.linalg import inv
+from numpy.linalg import cholesky
+from math import sin, cos
+import math
+from scipy.interpolate import interp1d
+from scipy.integrate import ode
+from scipy.integrate import solve_ivp
+from scipy.linalg import expm
+from scipy.linalg import solve_continuous_are
+
+from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
-from obstacles import Obstacles
 
-def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory, obstacles):
-    """
-    Optimizes the trajectory for a quadrotor with a pendulum using an initial guess.
+from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Variables
 
-    Parameters:
-    quadrotor_pendulum (QuadrotorPendulum): The quadrotor pendulum system.
-    x0 (np.array): Initial state of the system.
-    xf (np.array): Final desired state of the system.
-    T (float): Total time for the trajectory.
-    N (int): Number of discrete time steps.
-    initial_trajectory (tuple): Tuple of two arrays (initial_states, initial_controls),
-                               representing the initial guess for states and controls.
+class trajectory_optimizer:
+    def __init__(self, quadrotor, ):
 
-    Returns:
-    np.array, np.array: Optimized states and controls.
-    """
-    initial_states, initial_controls = initial_trajectory
 
-    x0 = initial_states[0]
-    xf = initial_states[-1]
+    def add_initial_state_constraint(self, prog, x, x_curr):
+        # TODO: impose initial state constraint.
+        # Use AddBoundingBoxConstraint
+        prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
 
-    # Create an instance of MathematicalProgram
-    prog = MathematicalProgram()
+    def add_input_saturation_constraint(self, prog, x, u, N):
+        # TODO: impose input limit constraint.
+        # Use AddBoundingBoxConstraint
+        # The limits are available through self.umin and self.umax
+        for uk in u:
+            ones = np.ones_like(uk)
+            prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_d(), self.input_max * ones - self.u_d(), uk)
 
-    # Define state and control variables
-    x_vars = np.array([prog.NewContinuousVariables(8, f"x_{i}") for i in range(N + 1)])
-    u_vars = np.array([prog.NewContinuousVariables(2, f"u_{i}") for i in range(N)])
+    def add_dynamics_constraint(self, prog, x, u, N, T):
+        # TODO: impose dynamics constraint.
+        # Use AddLinearEqualityConstraint(expr, value)
+        A, B = self.discrete_time_linearized_dynamics(T)
+        for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
+            prog.AddLinearEqualityConstraint(xk_p1 - A @ xk - B @ u[k], np.zeros_like(xk))
 
-    # Set initial and final state constraints
-    prog.AddBoundingBoxConstraint(x0, x0, x_vars[0])
-    prog.AddBoundingBoxConstraint(xf, xf, x_vars[-1])
+    def add_cost(self, prog, x, u, N):
+        # TODO: add cost.
+        cost = x[-1].T @ self.Qf @ x[-1]
+        for xk, uk in zip(x, u):
+            cost += xk.T @ self.Q @ xk
+            cost += uk.T @ self.R @ uk
 
-    # Add dynamic constraints
-    A, B = quadrotor_pendulum.discrete_time_linearized_dynamics(dt)
-    for i, (xi, xi_p1) in enumerate(zip(x_vars, x_vars[1:])):
-      prog.AddLinearEqualityConstraint(xi_p1 - A @ xi - B @ u_vars[i], np.zeros_like(xi))
+        prog.AddQuadraticCost(cost)
 
-    for i in range(N):
-        # Add obstacle avoidance constraints
-        tip_pos = quadrotor_pendulum.get_ends(x_vars[i])
-        feasibility = obstacles.is_feasible_continuous(tip_pos)
-        prog.AddConstraint(feasibility >= 0)
-    
-    # Add boundary constraints
-    x_min, y_min, x_max, y_max = obstacles.get_world()[0]
-    for i in range(N + 1):
-        # Extract the position (x, y) from the state
-        # Assuming the first two elements of the state vector are x and y positions
-        x_pos = x_vars[i][0]
-        y_pos = x_vars[i][1]
+    def compute_feedback(self, x_current):
+        '''
+        This function computes the MPC controller input u
+        '''
 
-        # Add boundary constraints
-        prog.AddConstraint(x_pos >= x_min)
-        prog.AddConstraint(x_pos <= x_max)
-        prog.AddConstraint(y_pos >= y_min)
-        prog.AddConstraint(y_pos <= y_max)
+        # Parameters for the QP
+        N = 
+        T = 0.1
 
-    # Define and add the cost function (Modify as per your specific cost function)
-    for u in u_vars:
-        prog.AddQuadraticCost(np.dot(u, u))
+        # Initialize mathematical program and decalre decision variables
+        prog = MathematicalProgram()
+        x = np.zeros((N, 8), dtype="object")
+        for i in range(N):
+            x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
+        u = np.zeros((N-1, 2), dtype="object")
+        for i in range(N-1):
+            u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
 
-    # Set the initial guess for the optimization
-    for i in range(N + 1):
-        prog.SetInitialGuess(x_vars[i], initial_states[i])
-    for i in range(N):
-        prog.SetInitialGuess(u_vars[i], initial_controls[i])
+        # Add constraints and cost
+        self.add_initial_state_constraint(prog, x, x_current)
+        self.add_input_saturation_constraint(prog, x, u, N)
+        self.add_dynamics_constraint(prog, x, u, N, T)
+        self.add_cost(prog, x, u, N)
 
-    # Solve the optimization problem
-    result = Solve(prog)
-    if not result.is_success():
-        raise ValueError("Optimization failed")
+        # Solve the QP
+        solver = OsqpSolver()
+        result = solver.Solve(prog)
 
-    # Extract the optimized trajectory
-    optimized_states = np.array([result.GetSolution(x) for x in x_vars])
-    optimized_controls = np.array([result.GetSolution(u) for u in u_vars])
 
-    return optimized_states, optimized_controls
+        u_mpc = result.GetSolution(u[0])
+        # TODO: retrieve the controller input from the solution of the optimization problem
+        # and use it to compute the MPC input u
+        # You should make use of result.GetSolution(decision_var) where decision_var
+        # is the variable you want
 
-# Usage example
-# x0 = np.array([initial_state])  # Replace with your initial state
-# xf = np.array([final_state])    # Replace with your final state
-# T = 1.0  # Total time
-# N = 50   # Number of time steps
-# initial_trajectory = (initial_states, initial_controls)  # Replace with your initial trajectory
-# optimized_states, optimized_controls = optimize_quadrotor_trajectory(quadrotor_pendulum, x0, xf, T, N, initial_trajectory)
+        return u_mpc + self.u_d()
