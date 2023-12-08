@@ -143,34 +143,6 @@ class QuadrotorPendulum(VectorSystem):
 
         return np.hstack([qd, qdd])
 
-    #   # This method calculates the time derivative of the state,
-    #   # which allows the system to be simulated forward in time.
-    #   def _DoCalcVectorTimeDerivatives(self, context, u, x, xdot):
-    #     q = x[0:4]
-    #     qd = x[4:8]
-    #     xdot[:] = self.evaluate_f(u, x, throw_when_limits_exceeded=False)
-
-    #   # This method calculates the output of the system
-    #   # (i.e. those things that are visible downstream of
-    #   # this system) from the state. In this case, it
-    #   # copies out the full state.
-    #   def _DoCalcVectorOutput(self, context, u, x, y):
-    #     y[:] = x
-
-    #   # The Drake simulation backend is very careful to avoid
-    #   # algebraic loops when systems are connected in feedback.
-    #   # This system does not feed its inputs directly to its
-    #   # outputs (the output is only a function of the state),
-    #   # so we can safely tell the simulator that we don't have
-    #   # any direct feedthrough.
-    #   def _DoHasDirectFeedthrough(self, input_port, output_port):
-    #     if input_port == 0 and output_port == 0:
-    #       return False
-    #     else:
-    #       # For other combinations of i/o, we will return
-    #       # "None", i.e. "I don't know."
-    #       return None
-
     # The method return matrices (A) and (B) that encode the
     # linearized dynamics of this system around the fixed point
     # u_f, x_f.
@@ -230,12 +202,12 @@ class QuadrotorPendulum(VectorSystem):
         return A_d, B_d
   
     def add_initial_state_constraint(self, prog, x, x_curr):
-        # TODO: impose initial state constraint.
+        # Impose initial state constraint.
         # Use AddBoundingBoxConstraint
         prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
 
     def add_input_saturation_constraint(self, prog, u):
-        # TODO: impose input limit constraint.
+        # Impose input limit constraint.
         # Use AddBoundingBoxConstraint
         # The limits are available through self.umin and self.umax
         for uk in u:
@@ -243,7 +215,7 @@ class QuadrotorPendulum(VectorSystem):
             prog.AddBoundingBoxConstraint(self.input_min * ones - self.u_f, self.input_max * ones - self.u_f, uk)
 
     def add_dynamics_constraint(self, prog, x, u, dt):
-        # TODO: impose dynamics constraint.
+        # Impose dynamics constraint.
         # Use AddLinearEqualityConstraint(expr, value)
 
         A, B = self.discrete_time_linearized_dynamics(dt, self.x_f, self.u_f)
@@ -289,19 +261,14 @@ class QuadrotorPendulum(VectorSystem):
         self.add_dynamics_constraint(prog, x, u, dt)
         self.add_cost(prog, x, u)
 
-        # Placeholder constraint and cost to satisfy QP requirements
-        # TODO: Delete after completing this function
-
         # Solve the QP
         solver = OsqpSolver()
         result = solver.Solve(prog)
 
 
         u_mpc = result.GetSolution(u[0])
-        # TODO: retrieve the controller input from the solution of the optimization problem
+        # Retrieve the controller input from the solution of the optimization problem
         # and use it to compute the MPC input u
-        # You should make use of result.GetSolution(decision_var) where decision_var
-        # is the variable you want
 
         return u_mpc + self.u_f
 

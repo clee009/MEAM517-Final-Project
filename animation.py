@@ -59,8 +59,8 @@ class Animation:
             lines += self.plot_trajectory(frame_ids[i], ax)
             lines += self.plot_quadrotor(anim_states[i], ax)
 
-            # ax.set_xlim(x_min, x_max)
-            # ax.set_ylim(y_min, y_max)
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
 
             ax.set_xlabel('y (m)')
             ax.set_ylabel('z (m)')
