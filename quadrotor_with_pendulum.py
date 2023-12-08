@@ -54,9 +54,6 @@ class QuadrotorPendulum(VectorSystem):
         self.u_f = np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
 
 
-    def u_d(self):
-        return self.u_f
-
     # This method returns (M, C, tauG, B)
     # according to the dynamics of this system.
     def GetManipulatorDynamics(self, q, qd):

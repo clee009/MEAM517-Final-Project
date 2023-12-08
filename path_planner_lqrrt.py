@@ -51,7 +51,7 @@ class PathPlannerLQRRT:
 
 
     def lqr(self, x, u): #lqrrt input wrapping
-        A, B = self.quad.GetLinearizedDynamics(x, self.quad.u_d())
+        A, B = self.quad.GetLinearizedDynamics(x, self.quad.u_f)
         S = solve_continuous_are(A, B, self.Q, self.R)
         K = -self.iR @ B.T @ S
         return S, K
@@ -174,5 +174,5 @@ class PathPlannerLQRRT:
         record_state = self.record_state if self.use_segment else None
 
         planner.update_plan(self.x0, self._get_sampling_space(), goal_bias=self.goal_bias, record_state=record_state, 
-                            xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_d())
+                            xrand_gen=xrand_gen, finish_on_goal=False, u_d=self.quad.u_f)
         return planner
