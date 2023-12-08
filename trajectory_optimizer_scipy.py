@@ -7,7 +7,7 @@ from math import sin, cos
 import math
 
 # Define the cost function
-def cost_function(flat_trajectory, state_shape, input_shape):
+def cost_function(flat_trajectory, state_shape, input_shape, goal):
 
     trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
 
@@ -16,7 +16,8 @@ def cost_function(flat_trajectory, state_shape, input_shape):
     inputs = trajectory['input']
 
     energy_cost = 0
-    distance_cost = 0
+    goal_distance_cost = 0
+    trajectory_length_cost = 0
 
     for i in range(1, states.shape[0]):
         # Energy cost calculation
@@ -24,12 +25,17 @@ def cost_function(flat_trajectory, state_shape, input_shape):
         energy_cost += np.sum(u**2)
 
         # Distance calculation
-        # x_prev, y_prev = states[i - 1, 0], states[i - 1, 1]
-        # x_curr, y_curr = states[i, 0], states[i, 1]
-        # distance_cost += np.sqrt((x_curr - x_prev)**2 + (y_curr - y_prev)**2)
+        prev_state = states[i - 1]
+        current_state = states[i]
+        
+        distance = np.linalg.norm(current_state[:2] - prev_state[:2])
+        trajectory_length_cost += distance
+
+    final_state = states[-1]  # Assuming the final state contains position info
+    goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
 
     # Combine the costs
-    total_cost = energy_cost + distance_cost
+    total_cost = energy_cost + goal_distance_cost + trajectory_length_cost
 
     print('cost =', total_cost)
     
@@ -85,7 +91,7 @@ def reconstruct_trajectory(flat_trajectory, state_shape, input_shape):
     return {'state': x, 'input': u}
 
 
-def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N, tol):
+def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N, tol, goal):
     """
     """
 
