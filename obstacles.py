@@ -75,6 +75,7 @@ class Obstacles:
         lines = []
         for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
             if i==0: #world boundary
+                continue
                 linewidth = 4
                 lines += ax.plot([x_min, x_max], [y_min, y_min], 'orange', linewidth=linewidth)
                 lines += ax.plot([x_min, x_max], [y_max, y_max], 'orange', linewidth=linewidth)
