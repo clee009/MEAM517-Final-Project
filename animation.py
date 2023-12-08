@@ -7,7 +7,7 @@ from quadrotor_with_pendulum import QuadrotorPendulum
 
 
 class Animation:
-    def __init__(self, obs: Obstacles, quad: QuadrotorPendulum, num_frames = 60):
+    def __init__(self, quad: QuadrotorPendulum, obs: Obstacles, num_frames = 60):
         self.obs = obs
         self.traj = np.zeros((1,8))
         self.quad = quad

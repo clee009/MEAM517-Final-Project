@@ -10,7 +10,7 @@ import random
 
 
 class PathPlannerLQRRT:
-    def __init__(self, file: str, obs: Obstacles, quad: QuadrotorPendulum):
+    def __init__(self, file: str, quad: QuadrotorPendulum, obs: Obstacles):
         for key, value in configs.load_yaml(file).items():
             setattr(self, key, value)
 

@@ -6,7 +6,7 @@ import numpy as np
 
 from ilqr import iLQR
 from ilqr.utils import GetSyms, Constrain
-from ilqr.containers import Dynamics, Cost
+from ilqr.ilqr import Dynamics, Cost
 
 #state and action dimensions
 n_x = 3
