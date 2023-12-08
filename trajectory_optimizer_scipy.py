@@ -31,7 +31,7 @@ def cost_function(flat_trajectory, state_shape, input_shape):
     # Combine the costs
     total_cost = energy_cost + distance_cost
 
-    print('cost =', cost)
+    print('cost =', total_cost)
     
     return total_cost
 
