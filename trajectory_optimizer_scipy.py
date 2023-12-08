@@ -7,9 +7,9 @@ from math import sin, cos
 import math
 
 # Define the cost function
-def cost_function(flat_trajectory):
+def cost_function(flat_trajectory, state_shape, input_shape):
 
-    trajectory = reconstruct_trajectory(flat_trajectory)
+    trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
 
     # Calculate the cost based on input energy and distance
     states = trajectory['state']
@@ -34,9 +34,9 @@ def cost_function(flat_trajectory):
     return total_cost
 
 # Define the constraints for obstacle avoidance
-def strict_obstacle_constraint(flat_trajectory, quadrotor, obstacles):
+def strict_obstacle_constraint(flat_trajectory, quadrotor, obstacles, state_shape, input_shape):
 
-    trajectory = reconstruct_trajectory(flat_trajectory)
+    trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
 
     # Check if the trajectory intersects with any obstacle
     for state in trajectory['state']:
@@ -92,10 +92,10 @@ def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N):
     state_shape = (N, 8)
     input_shape = (N-1, 2)
 
-    constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles)}]
+    constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
 
     # Optimization problem setup
-    result = minimize(cost_function, trajectory, args = (quadrotor, obstacles), constraints=constraints)
+    result = minimize(cost_function, trajectory, args = (state_shape, input_shape), constraints=constraints)
 
     # Extract the optimized trajectory
     optimized_trajectory = reconstruct_trajectory(result.x)
