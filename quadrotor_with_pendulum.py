@@ -23,13 +23,14 @@ from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Var
 # the drone (mb with body lenght lb) and the first
 # link (m1 centered at l1).
 class QuadrotorPendulum(VectorSystem):
-  def __init__(self, Q, R, Qf, mb = 1., lb = 0.2, 
-                      m1 = 2., l1 = 0.2,
+  def __init__(self, Q, R, Qf, mb = 1., lb = 0.5, 
+                      m1 = 2., l1 = 0.5,
                       g = 10., input_max = 30.):
     VectorSystem.__init__(self,
         2,                           # Two input (thrust of each rotor).
         8)                           # Eight outputs (xb, yb, thetab, theta1) and its derivatives
-    # self._DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
+    
+    # self.DeclareContinuousState(8)  # Eight states (xb, yb, thetab, theta1) and its derivatives.
 
     self.mb = float(mb)
     self.lb = float(lb)
@@ -229,7 +230,7 @@ class QuadrotorPendulum(VectorSystem):
   
   def x_d(self):
     # Nominal state
-    return np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    return np.array([5, 2, 0, 0, 0, 0, 0, 0])
 
   def u_d(self):
     # Nominal input
@@ -258,9 +259,14 @@ class QuadrotorPendulum(VectorSystem):
   def add_cost(self, prog, x, u, N):
     # TODO: add cost.
     cost = x[-1].T @ self.Qf @ x[-1]
+    xf = self.x_d()
+    uf = self.u_d()
+
     for xk, uk in zip(x, u):
-      cost += xk.T @ self.Q @ xk
-      cost += uk.T @ self.R @ uk
+      xe = xk - xf
+      ue = uk - uf
+      cost += xe.T @ self.Q @ xe
+      cost += ue.T @ self.R @ ue
     
     prog.AddQuadraticCost(cost)
 
