@@ -54,7 +54,7 @@ class trajectory_optimizer:
         '''
 
         # Parameters for the QP
-        N = 
+        N = 10
         T = 0.1
 
         # Initialize mathematical program and decalre decision variables
