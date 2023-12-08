@@ -11,6 +11,7 @@ def cost_function(flat_trajectory, state_shape, input_shape, goal):
 
     trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
 
+    N = state_shape[0]
     # Calculate the cost based on input energy and distance
     states = trajectory['state']
     inputs = trajectory['input']
@@ -37,7 +38,8 @@ def cost_function(flat_trajectory, state_shape, input_shape, goal):
     # Combine the costs
     total_cost = energy_cost + goal_distance_cost + trajectory_length_cost
 
-    print('cost =', total_cost)
+    # print('cost =', total_cost)
+    print("state middle =", states[N // 2])
     
     return total_cost
 
