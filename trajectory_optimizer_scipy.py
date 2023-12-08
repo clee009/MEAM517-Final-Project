@@ -7,7 +7,7 @@ from math import sin, cos
 import math
 
 # Define the cost function
-def cost_function(flat_trajectory, state_shape, input_shape, goal):
+def cost_function(flat_trajectory, quadrotor, state_shape, input_shape, goal):
 
     trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
 
@@ -35,8 +35,10 @@ def cost_function(flat_trajectory, state_shape, input_shape, goal):
     final_state = states[-1]  # Assuming the final state contains position info
     goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
 
+    obstacle_penalty = calculate_obstacle_penalty(trajectory, quadrotor)
+
     # Combine the costs
-    total_cost = energy_cost + goal_distance_cost + trajectory_length_cost
+    total_cost = energy_cost + goal_distance_cost + obstacle_penalty
 
     # print('cost =', total_cost)
     print("state middle =", states[N // 2])
@@ -56,6 +58,18 @@ def strict_obstacle_constraint(flat_trajectory, quadrotor, obstacles, state_shap
             return -1
         
     return 1
+
+def calculate_obstacle_penalty(trajectory, quadrotor):
+    obstacle_penalty = 0
+
+    for state in trajectory['state']:
+        tip_pos = quadrotor.get_ends(state)
+        feasibility_measure = quadrotor.is_feasible_continuous(tip_pos)
+        
+        if feasibility_measure < 0:
+            obstacle_penalty += -feasibility_measure  # Penalize violations
+
+    return obstacle_penalty
 
 def flatten_trajectory(trajectory):
     """
@@ -102,12 +116,12 @@ def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N, goal, max_
     state_shape = (N, 8)
     input_shape = (N, 2)
 
-    constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
+    # constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
 
     options = {'maxiter': max_iter, 'ftol': tol}
 
     # Optimization problem setup
-    result = minimize(cost_function, trajectory, method = 'SLSQP', args = (state_shape, input_shape, goal), options=options, constraints=constraints)
+    result = minimize(cost_function, trajectory, method = 'SLSQP', args = (quadrotor, state_shape, input_shape, goal), options=options)
 
     # Extract the optimized trajectory
     optimized_trajectory = reconstruct_trajectory(result.x, state_shape, input_shape)

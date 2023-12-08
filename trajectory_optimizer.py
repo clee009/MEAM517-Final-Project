@@ -27,10 +27,10 @@ class TrajectoryOptimizer:
         self.R = quadrotor.R
         
 
-    def add_initial_state_constraint(self, prog, x, x_curr):
-        # TODO: impose initial state constraint.
-        # Use AddBoundingBoxConstraint
-        prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
+    # def add_initial_state_constraint(self, prog, x, x_curr):
+    #     # TODO: impose initial state constraint.
+    #     # Use AddBoundingBoxConstraint
+    #     prog.AddBoundingBoxConstraint(x_curr, x_curr, x[0])
 
     def add_input_saturation_constraint(self, prog, u):
         # TODO: impose input limit constraint.
