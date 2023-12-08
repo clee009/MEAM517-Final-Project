@@ -85,7 +85,7 @@ class Planner:
     def __init__(self, dynamics, lqr, constraints,
                  horizon, dt=0.05, FPR=0,
                  error_tol=0.05, erf=np.subtract,
-                 min_time=0.5, max_time=1, max_nodes=1E5,
+                 min_time=0.5, max_time=1, max_nodes=1E5, 
                  goal0=None, sys_time=time.time, printing=True):
 
         self.set_system(dynamics, lqr, constraints, erf)
@@ -103,7 +103,7 @@ class Planner:
 #################################################
 
     def update_plan(self, x0, sample_space, goal_bias=0,
-                    guide=None, xrand_gen=None, pruning=True,
+                    guide=None, xrand_gen=None, pruning=True, record_state = None, 
                     finish_on_goal=False, specific_time=None, u_d = None):
         """
         A new tree is grown from the seed x0 in an attempt to plan
@@ -232,11 +232,13 @@ class Planner:
         time_start = self.sys_time()
 
         # Planning loop!
+        total = 0
+        reach = 0
         while True:
 
             # Random sample state
             xrand = xrand_gen(self)
-            self.samples.append(xrand)
+            #self.samples.append(xrand)
             
 
             # The "nearest" node to xrand has the least cost-to-go of all nodes
@@ -256,7 +258,11 @@ class Planner:
             #print(xnew_seq, unew_seq)
 
             # If steer produced any feasible results, extend tree
+            total += 1
             if len(xnew_seq) > 0:
+                reach += 1
+                if record_state:
+                    record_state(xrand)
 
                 # Add the new node to the tree
                 xnew = np.copy(xnew_seq[-1])
@@ -333,6 +339,7 @@ class Planner:
                 self._prepare_interpolators()
                 break
 
+        print("lqr success rate: {:.2f}%".format(100.0 * reach/total))
         if self.killed or self.tree.size > self.max_nodes:
             if self.printing:
                 print("Plan update terminated abruptly!")
