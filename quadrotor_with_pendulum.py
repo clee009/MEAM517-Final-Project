@@ -257,7 +257,7 @@ class QuadrotorPendulum(VectorSystem):
 
         for xk, uk in zip(x, u):
             xe = xk - self.x_f
-            ue = uk - self.u_k
+            ue = uk - self.u_f
 
             cost += xe.T @ self.Q @ xe
             cost += ue.T @ self.R @ ue
