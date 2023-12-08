@@ -307,8 +307,8 @@ class QuadrotorPendulum(VectorSystem):
         '''
         Infinite horizon LQR controller
         '''
-        u_f = self.u_d()
-        x_f = self.x_d()
+        u_f = self.u_f
+        x_f = self.x_f
 
         A, B = self.GetLinearizedDynamics(u_f, x_f)
         S = solve_continuous_are(A, B, self.Q, self.R)
