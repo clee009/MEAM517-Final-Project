@@ -102,7 +102,7 @@ class TrajectoryOptimizer:
         self.add_input_saturation_constraint(prog, u)
         self.add_dynamics_constraint(prog, x, u, t_step)
         self.add_cost(prog, x, u)
-        # self.add_obstacle_constraints(prog, x, obstacles)
+        self.add_obstacle_constraints(prog, x, obstacles)
 
         # Placeholder constraint and cost to satisfy QP requirements
         # TODO: Delete after completing this function
@@ -110,6 +110,7 @@ class TrajectoryOptimizer:
         # Solve the QP
         solver = OsqpSolver()
         result = solver.Solve(prog)
+        print(result)
 
 
         u_mpc = result.GetSolution(u[0])
@@ -119,6 +120,43 @@ class TrajectoryOptimizer:
         # is the variable you want
 
         return u_mpc + self.u_f
+    
+
+    def optimize_trajectory(self, x0, N, t_step, obstacles, initial_traj=None):
+        prog = MathematicalProgram()
+        x = np.zeros((N, 8), dtype="object")
+        for i in range(N):
+            x[i] = prog.NewContinuousVariables(8, "x_" + str(i))
+        u = np.zeros((N-1, 2), dtype="object")
+        for i in range(N-1):
+            u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
+
+        if initial_traj is not None:
+            for i in range(N):
+                if i < len(initial_traj['state']):
+                    prog.SetInitialGuess(x[i], initial_traj['state'][i])
+                if i < len(initial_traj['input']) and i < N - 1:
+                    prog.SetInitialGuess(u[i], initial_traj['input'][i])
+
+        # Add constraints and cost
+        self.add_initial_state_constraint(prog, x, x0)
+        self.add_input_saturation_constraint(prog, u)
+        self.add_dynamics_constraint(prog, x, u, t_step)
+        self.add_cost(prog, x, u)
+        self.add_obstacle_constraints(prog, x, obstacles)
+
+        # Placeholder constraint and cost to satisfy QP requirements
+        # TODO: Delete after completing this function
+
+        # Solve the QP
+        solver = OsqpSolver()
+        result = solver.Solve(prog)
+        x = result.GetSolution(x)
+        return x
+        # TODO: retrieve the controller input from the solution of the optimization problem
+        # and use it to compute the MPC input u
+        # You should make use of result.GetSolution(decision_var) where decision_var
+        # is the variable you want
     
     def simulate_quadrotor(self, x0, tf, xf, N, t_step, obstacles, initial_traj=None):
         # Simulates a stabilized maneuver on the 2D quadrotor
