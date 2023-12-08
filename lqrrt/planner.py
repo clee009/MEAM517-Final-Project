@@ -232,6 +232,8 @@ class Planner:
         time_start = self.sys_time()
 
         # Planning loop!
+        total = 0
+        reach = 0
         while True:
 
             # Random sample state
@@ -240,7 +242,6 @@ class Planner:
             
 
             # The "nearest" node to xrand has the least cost-to-go of all nodes
-            costs = np.argsort(self._costs_to_go(xrand))
             if pruning:
                 nearestIDs = np.argsort(self._costs_to_go(xrand))
                 nearestID = nearestIDs[0]
@@ -257,7 +258,9 @@ class Planner:
             #print(xnew_seq, unew_seq)
 
             # If steer produced any feasible results, extend tree
+            total += 1
             if len(xnew_seq) > 0:
+                reach += 1
                 if record_state:
                     record_state(xrand)
 
@@ -336,6 +339,7 @@ class Planner:
                 self._prepare_interpolators()
                 break
 
+        print("lqr success rate: {:.2f}%".format(100.0 * reach/total))
         if self.killed or self.tree.size > self.max_nodes:
             if self.printing:
                 print("Plan update terminated abruptly!")

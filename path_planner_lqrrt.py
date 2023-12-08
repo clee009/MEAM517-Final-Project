@@ -130,7 +130,9 @@ class PathPlannerLQRRT:
                     if adj_id != -1 and not self.accessible[j]:
                         adj_ids.add(adj_id)
 
-            assert adj_ids
+            if not adj_ids:
+                return self.xf 
+            
             adj_ids = list(adj_ids)
 
             weights = [self.obs.adj_areas[idx] for idx in adj_ids]
