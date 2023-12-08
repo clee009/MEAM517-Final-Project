@@ -20,6 +20,8 @@ class TrajectoryOptimizer:
         self.quadrotor = quadrotor
         self.x_f = quadrotor.x_f
         self.u_f = quadrotor.u_f
+        self.input_min = quadrotor.input_min
+        self.input_max = quadrotor.input_max
         
 
     def add_initial_state_constraint(self, prog, x, x_curr):
