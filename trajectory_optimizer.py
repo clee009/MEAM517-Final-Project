@@ -17,7 +17,7 @@ from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Var
 
 class trajectory_optimizer:
     def __init__(self, quadrotor, ):
-
+        pass
 
     def add_initial_state_constraint(self, prog, x, x_curr):
         # TODO: impose initial state constraint.
