@@ -135,7 +135,9 @@ class TrajectoryOptimizer:
         u = [np.zeros((2,))]
         t = [t0]
 
-        while np.linalg.norm(np.array(x[-1][0:2]) - xf[0:2]) > 1e-3 and t[-1] < tf and iter < max_iter:
+        i = 0
+
+        while np.linalg.norm(np.array(x[-1][0:2]) - xf[0:2]) > 1e-3 and t[-1] < tf and i < max_iter:
             current_time = t[-1]
             current_x = x[-1]
             current_u_command = np.zeros(2)
@@ -154,6 +156,8 @@ class TrajectoryOptimizer:
             t.append(t[-1] + dt)
             x.append(sol.y[:, -1])
             u.append(current_u_command)
+
+            i += 1
 
         x = np.array(x)
         u = np.array(u)
