@@ -2,7 +2,7 @@ import pydrake.all as drake
 
 
 import numpy as np
-from obstacles import Obstacles
+from world.obstacles import Obstacles
 from quadrotor_with_pendulum import QuadrotorPendulum
 
 

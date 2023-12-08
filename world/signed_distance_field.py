@@ -33,13 +33,14 @@ class SignedDistanceField(Obstacles):
             elif y_point > y_max:
                 return y_point - y_max  # Top edge
             else:
-                return 0  # Point is inside the rectangle
+                x, y, = x_point, y_point
+                return -min(x_max - x, y_max - y, x - x_min, y - y_min)
 
     
 
     def calc_sdf(self, state):
         min_sdf = np.inf
-        for i in range(1, self.n):
+        for i in range(self.n):
             sdf = self.signed_distance_to_rectangle(state, i)
             min_sdf = min(min_sdf, sdf if i else -sdf)
 
@@ -49,8 +50,8 @@ class SignedDistanceField(Obstacles):
         x_min, y_min, x_max, y_max = self.boxes[0]
 
         # Generate a grid of points
-        x_vals = np.linspace(x_min, x_max, 1000)
-        y_vals = np.linspace(y_min, y_max, 1000)
+        x_vals = np.linspace(x_min, x_max, 500)
+        y_vals = np.linspace(y_min, y_max, 500)
         X, Y = np.meshgrid(x_vals, y_vals)
 
         # Calculate the signed distance for each point in the grid
