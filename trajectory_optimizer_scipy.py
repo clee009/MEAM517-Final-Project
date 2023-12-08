@@ -24,12 +24,14 @@ def cost_function(flat_trajectory, state_shape, input_shape):
         energy_cost += np.sum(u**2)
 
         # Distance calculation
-        x_prev, y_prev = states[i - 1, 0], states[i - 1, 1]
-        x_curr, y_curr = states[i, 0], states[i, 1]
-        distance_cost += np.sqrt((x_curr - x_prev)**2 + (y_curr - y_prev)**2)
+        # x_prev, y_prev = states[i - 1, 0], states[i - 1, 1]
+        # x_curr, y_curr = states[i, 0], states[i, 1]
+        # distance_cost += np.sqrt((x_curr - x_prev)**2 + (y_curr - y_prev)**2)
 
     # Combine the costs
     total_cost = energy_cost + distance_cost
+
+    print('cost =', cost)
     
     return total_cost
 
