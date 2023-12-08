@@ -35,10 +35,10 @@ def cost_function(flat_trajectory, quadrotor, obstacles, state_shape, input_shap
     final_state = states[-1]  # Assuming the final state contains position info
     goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
 
-    obstacle_penalty = calculate_obstacle_penalty(trajectory, quadrotor, obstacles)
+    # obstacle_penalty = calculate_obstacle_penalty(trajectory, quadrotor, obstacles)
 
     # Combine the costs
-    total_cost = energy_cost + goal_distance_cost + obstacle_penalty
+    total_cost = energy_cost + goal_distance_cost #+ obstacle_penalty
 
     print('cost =', total_cost)
     print("state middle =", states[N // 2])
@@ -59,17 +59,17 @@ def strict_obstacle_constraint(flat_trajectory, quadrotor, obstacles, state_shap
         
     return 1
 
-def calculate_obstacle_penalty(trajectory, quadrotor, obstacles):
-    obstacle_penalty = 0
+# def calculate_obstacle_penalty(trajectory, quadrotor, obstacles):
+#     obstacle_penalty = 0
 
-    for state in trajectory['state']:
-        tip_pos = quadrotor.get_ends(state)
-        feasibility_measure = obstacles.is_feasible_continuous(tip_pos)
+#     for state in trajectory['state']:
+#         tip_pos = quadrotor.get_ends(state)
+#         feasibility_measure = obstacles.is_feasible_continuous(tip_pos)
         
-        if feasibility_measure < 0:
-            obstacle_penalty += -feasibility_measure  # Penalize violations
+#         if feasibility_measure < 0:
+#             obstacle_penalty += -feasibility_measure  # Penalize violations
 
-    return obstacle_penalty
+#     return obstacle_penalty
 
 def flatten_trajectory(trajectory):
     """
