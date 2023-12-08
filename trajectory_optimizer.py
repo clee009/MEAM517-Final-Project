@@ -142,7 +142,10 @@ class TrajectoryOptimizer:
             current_x = x[-1]
             current_u_command = np.zeros(2)
 
-            current_u_command = self.compute_feedback(current_x, t_step, N, obstacles, initial_traj)
+            if i == 0:
+                current_u_command = self.compute_feedback(current_x, t_step, N, obstacles, initial_traj)
+            else:
+                current_u_command = self.compute_feedback(current_x, t_step, N, obstacles)
 
             current_u_real = np.clip(current_u_command, self.quadrotor.input_min, self.quadrotor.input_max)
             # Autonomous ODE for constant inputs to work with solve_ivp
