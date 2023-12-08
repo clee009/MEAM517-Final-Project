@@ -51,8 +51,8 @@ class TrajectoryOptimizer:
         total_cost = energy_cost + goal_distance_cost  # Combine costs
 
         print("cost =", total_cost)
-        print("states =", states)
-        print("inputs =", inputs)
+        print("states =", states[self.N // 2])
+        print("inputs =", inputs[self.N // 2])
         print()
         return total_cost
         
