@@ -138,7 +138,7 @@ class Obstacles:
         return min_distance - safety_threshold
 
 
-    def plot(self, ax: plt.Axes, plot_segs=False):
+    def plot_obs(self, ax: plt.Axes, plot_segs=False):
         lines = []
         boxes = self.regions if plot_segs else self.boxes
         for i, (x_min, y_min, x_max, y_max) in enumerate(boxes):
