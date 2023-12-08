@@ -49,6 +49,11 @@ class TrajectoryOptimizer:
             goal_distance_cost += np.linalg.norm(x - goal)  # Distance to goal
 
         total_cost = energy_cost + goal_distance_cost  # Combine costs
+
+        print("cost =", total_cost)
+        print("states =", states)
+        print("inputs =", inputs)
+        print()
         return total_cost
         
     def dynamics_constraint(self, flat_trajectory):
