@@ -25,11 +25,11 @@ def cost_function(flat_trajectory, state_shape, input_shape, goal):
         energy_cost += np.sum(u**2)
 
         # Distance calculation
-        prev_state = states[i - 1]
-        current_state = states[i]
+        # prev_state = states[i - 1]
+        # current_state = states[i]
         
-        distance = np.linalg.norm(current_state[:2] - prev_state[:2])
-        trajectory_length_cost += distance
+        # distance = np.linalg.norm(current_state[:2] - prev_state[:2])
+        # trajectory_length_cost += distance
 
     final_state = states[-1]  # Assuming the final state contains position info
     goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
