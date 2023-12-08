@@ -63,7 +63,7 @@ class TrajectoryOptimizer:
 
         prog.AddQuadraticCost(cost)
 
-
+        print('cost = ', cost)
 
     def add_obstacle_constraints(self, prog, x, obstacles):
         for xk in x:
@@ -92,12 +92,12 @@ class TrajectoryOptimizer:
         for i in range(N-1):
             u[i] = prog.NewContinuousVariables(2, "u_" + str(i))
 
-        if initial_traj is not None:
-            for i in range(N):
-                if i < len(initial_traj['state']):
-                    prog.SetInitialGuess(x[i], initial_traj['state'][i])
-                if i < len(initial_traj['input']) and i < N - 1:
-                    prog.SetInitialGuess(u[i], initial_traj['input'][i])
+        # if initial_traj is not None:
+        #     for i in range(N):
+        #         if i < len(initial_traj['state']):
+        #             prog.SetInitialGuess(x[i], initial_traj['state'][i])
+        #         if i < len(initial_traj['input']) and i < N - 1:
+        #             prog.SetInitialGuess(u[i], initial_traj['input'][i])
 
         # Add constraints and cost
         self.add_initial_state_constraint(prog, x, x_current)
@@ -142,10 +142,11 @@ class TrajectoryOptimizer:
             current_x = x[-1]
             current_u_command = np.zeros(2)
 
-            if i == 0:
-                current_u_command = self.compute_feedback(current_x, t_step, N, obstacles, initial_traj)
-            else:
-                current_u_command = self.compute_feedback(current_x, t_step, N, obstacles)
+            current_u_command = self.compute_feedback(current_x, t_step, N, obstacles, initial_traj)
+            # if i == 0:
+            #     current_u_command = self.compute_feedback(current_x, t_step, N, obstacles, initial_traj)
+            # else:
+            #     current_u_command = self.compute_feedback(current_x, t_step, N, obstacles)
 
             current_u_real = np.clip(current_u_command, self.quadrotor.input_min, self.quadrotor.input_max)
             # Autonomous ODE for constant inputs to work with solve_ivp
