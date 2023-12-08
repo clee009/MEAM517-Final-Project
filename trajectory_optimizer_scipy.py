@@ -103,7 +103,7 @@ def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N, tol, goal)
     constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
 
     # Optimization problem setup
-    result = minimize(cost_function, trajectory, args = (state_shape, input_shape), tol=tol, constraints=constraints)
+    result = minimize(cost_function, trajectory, args = (state_shape, input_shape, goal), tol=tol, constraints=constraints)
 
     # Extract the optimized trajectory
     optimized_trajectory = reconstruct_trajectory(result.x, state_shape, input_shape)
