@@ -25,6 +25,8 @@ def cost_function(flat_trajectory, quadrotor, obstacles, state_shape, input_shap
         u = inputs[i]
         energy_cost += np.sum(u**2)
 
+        goal_distance_cost += np.linalg.norm(states[i][:2] - goal[:2])  # Assuming 2D position is the first two elements
+
         # Distance calculation
         # prev_state = states[i - 1]
         # current_state = states[i]
@@ -32,8 +34,8 @@ def cost_function(flat_trajectory, quadrotor, obstacles, state_shape, input_shap
         # distance = np.linalg.norm(current_state[:2] - prev_state[:2])
         # trajectory_length_cost += distance
 
-    final_state = states[-1]  # Assuming the final state contains position info
-    goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
+    # final_state = states[-1]  # Assuming the final state contains position info
+    # goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
 
     # obstacle_penalty = calculate_obstacle_penalty(trajectory, quadrotor, obstacles)
 
