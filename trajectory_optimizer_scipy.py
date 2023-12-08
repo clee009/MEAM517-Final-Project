@@ -90,7 +90,7 @@ def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N):
     trajectory = flatten_trajectory(initial_trajectory)
     
     state_shape = (N, 8)
-    input_shape = (N-1, 2)
+    input_shape = (N, 2)
 
     constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
 
