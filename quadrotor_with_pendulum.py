@@ -23,8 +23,8 @@ from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Var
 # the drone (mb with body lenght lb) and the first
 # link (m1 centered at l1).
 class QuadrotorPendulum(VectorSystem):
-    def __init__(self, Q, R, Qf, mb = 1., lb = 0.2, 
-                        m1 = 2., l1 = 0.2,
+    def __init__(self, Q, R, Qf, x_f, mb = 1., 
+                        lb = 0.2, m1 = 2., l1 = 0.2,
                         g = 10., input_max = 30.):
         VectorSystem.__init__(self,
             2,                           # Two input (thrust of each rotor).
@@ -49,7 +49,8 @@ class QuadrotorPendulum(VectorSystem):
         self.R = R
         self.Qf = Qf
 
-        # Nominal input for linearization
+        # Nominal state and input for linearization
+        self.x_f = x_f
         self.u_f = np.array([(self.mb + self.m1)*self.g/2, (self.mb + self.m1)*self.g/2])
 
     # This method returns (M, C, tauG, B)
@@ -228,10 +229,6 @@ class QuadrotorPendulum(VectorSystem):
 
         return A_d, B_d
   
-    def x_f(self):
-        # Nominal state
-        return np.array([5, 2, 0, 0, 0, 0, 0, 0])
-  
     def add_initial_state_constraint(self, prog, x, x_curr):
         # TODO: impose initial state constraint.
         # Use AddBoundingBoxConstraint
@@ -249,8 +246,9 @@ class QuadrotorPendulum(VectorSystem):
         # TODO: impose dynamics constraint.
         # Use AddLinearEqualityConstraint(expr, value)
 
+        A, B = self.discrete_time_linearized_dynamics(dt, self.x_f, self.u_f)
+
         for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
-            A, B = self.discrete_time_linearized_dynamics(dt, xk_p1, self.u_f)
             prog.AddLinearEqualityConstraint(xk_p1 - A @ xk - B @ u[k], np.zeros_like(xk))
 
     def add_cost(self, prog, x, u):
