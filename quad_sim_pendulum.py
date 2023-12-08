@@ -3,7 +3,7 @@ from math import sin, cos, pi
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, use_clf_qp=False):
+def simulate_quadrotor(x0, tf, xf, quadrotor, use_mpc=True, use_mpc_with_clf=False, use_clf_qp=False):
   # Simulates a stabilized maneuver on the 2D quadrotor
   # system, with an initial value of x0
   t0 = 0.0
@@ -15,7 +15,7 @@ def simulate_quadrotor(x0, tf, quadrotor, use_mpc=True, use_mpc_with_clf=False, 
   u = [np.zeros((2,))]
   t = [t0]
 
-  while np.linalg.norm(np.array(x[-1][0:2])) > 1e-3 and t[-1] < tf:
+  while np.linalg.norm(np.array(x[-1][0:2]) - xf) > 1e-3 and t[-1] < tf:
     current_time = t[-1]
     current_x = x[-1]
     current_u_command = np.zeros(2)
