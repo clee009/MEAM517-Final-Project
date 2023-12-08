@@ -249,7 +249,7 @@ class QuadrotorPendulum(VectorSystem):
         A, B = self.discrete_time_linearized_dynamics(dt, self.x_f, self.u_f)
 
         for k, (xk, xk_p1) in enumerate(zip(x, x[1:])):
-            prog.AddLinearEqualityConstraint((xk_p1 - self.x_f) - A @ (xk - self.x_f) - B @ u[k], np.zeros_like(xk))
+            prog.AddLinearEqualityConstraint((xk_p1 - self.x_f) - A @ (xk - self.x_f) - B @ (u[k] - self.u_f), np.zeros_like(xk))
 
     def add_cost(self, prog, x, u):
         # TODO: add cost.
@@ -257,9 +257,10 @@ class QuadrotorPendulum(VectorSystem):
 
         for xk, uk in zip(x, u):
             xe = xk - self.x_f
+            ue = uk - self.u_k
 
             cost += xe.T @ self.Q @ xe
-            cost += uk.T @ self.R @ uk
+            cost += ue.T @ self.R @ ue
 
         prog.AddQuadraticCost(cost)
 
