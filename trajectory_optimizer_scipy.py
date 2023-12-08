@@ -1,3 +1,4 @@
+from xml.etree.ElementPath import xpath_tokenizer_re
 from scipy.optimize import minimize
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,133 +7,125 @@ from numpy.linalg import cholesky
 from math import sin, cos
 import math
 
-# Define the cost function
-def cost_function(flat_trajectory, quadrotor, obstacles, state_shape, input_shape, goal):
+class TrajectoryOptimizer:
+    def __init__(self, quadrotor, obstacles, initial_trajectory, N, dt, goal, max_iter, tol):
+        self.quadrotor = quadrotor
+        self.obstacles = obstacles
+        self.initial_trajectory = initial_trajectory
+        self.N = N
+        self.goal = goal
+        self.max_iter = max_iter
+        self.tol = tol
+        self.state_shape = (N, 8)
+        self.input_shape = (N, 2)
+        self.dt = dt
 
-    trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
-
-    N = state_shape[0]
-    # Calculate the cost based on input energy and distance
-    states = trajectory['state']
-    inputs = trajectory['input']
-
-    energy_cost = 0
-    goal_distance_cost = 0
-    trajectory_length_cost = 0
-
-    for i in range(1, states.shape[0]):
-        # Energy cost calculation
-        u = inputs[i]
-        energy_cost += np.sum(u**2)
-
-        goal_distance_cost += np.linalg.norm(states[i][:2] - goal[:2])  # Assuming 2D position is the first two elements
-
-        # Distance calculation
-        # prev_state = states[i - 1]
-        # current_state = states[i]
+    def optimize_trajectory(self):
+        flat_trajectory = self.flatten_trajectory(self.initial_trajectory)
+        constraints = [
+            {'type': 'eq', 'fun': self.dynamics_constraint},
+            {'type': 'eq', 'fun': self.initial_state_constraint, 'args': (self.initial_trajectory['state'][0],)}
+        ]
+        result = minimize(self.cost_function, flat_trajectory, method='SLSQP', args=(self.state_shape, self.input_shape, self.goal), 
+                          constraints=constraints, options={'maxiter': self.max_iter, 'ftol': self.tol})
         
-        # distance = np.linalg.norm(current_state[:2] - prev_state[:2])
-        # trajectory_length_cost += distance
+        optimized_trajectory = self.reconstruct_trajectory(result.x, self.state_shape, self.input_shape)
+        self.visualize_trajectory(self.initial_trajectory, optimized_trajectory)
+        return optimized_trajectory
 
-    # final_state = states[-1]  # Assuming the final state contains position info
-    # goal_distance_cost = np.linalg.norm(final_state[:2] - goal[:2])  # Assuming 2D position is the first two elements
+    def cost_function(self, flat_trajectory, state_shape, input_shape, goal):
+        trajectory = self.reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
+        states = trajectory['state']
+        inputs = trajectory['input']
 
-    # obstacle_penalty = calculate_obstacle_penalty(trajectory, quadrotor, obstacles)
+        energy_cost = 0
+        goal_distance_cost = 0
 
-    # Combine the costs
-    total_cost = energy_cost + goal_distance_cost #+ obstacle_penalty
+        for i in range(1, states.shape[0]):
+            u = inputs[i]
+            energy_cost += np.sum(u**2)  # Energy cost: sum of squared inputs
 
-    print('cost =', total_cost)
-    print("state middle =", states[N // 2])
-    
-    return total_cost
+            x = states[i]
+            goal_distance_cost += np.linalg.norm(x - goal)  # Distance to goal
 
-# Define the constraints for obstacle avoidance
-def strict_obstacle_constraint(flat_trajectory, quadrotor, obstacles, state_shape, input_shape):
-
-    trajectory = reconstruct_trajectory(flat_trajectory, state_shape, input_shape)
-
-    # Check if the trajectory intersects with any obstacle
-    for state in trajectory['state']:
-        tip_pos = quadrotor.get_ends(state)
-        is_feasible = obstacles.is_feasible(tip_pos)
-        if not is_feasible:
-            return -1
+        total_cost = energy_cost + goal_distance_cost  # Combine costs
+        return total_cost
         
-    return 1
+    def dynamics_constraint(self, flat_trajectory):
+        trajectory = self.reconstruct_trajectory(flat_trajectory, self.state_shape, self.input_shape)
+        states = trajectory['state']
+        inputs = trajectory['input']
 
-# def calculate_obstacle_penalty(trajectory, quadrotor, obstacles):
-#     obstacle_penalty = 0
-
-#     for state in trajectory['state']:
-#         tip_pos = quadrotor.get_ends(state)
-#         feasibility_measure = obstacles.is_feasible_continuous(tip_pos)
+        # Obtain linearized dynamics matrices
+        A, B = self.quadrotor.discrete_time_linearized_dynamics(self.dt, self.quadrotor.x_f, self.quadrotor.u_f)
         
-#         if feasibility_measure < 0:
-#             obstacle_penalty += -feasibility_measure  # Penalize violations
+        constraint_violations = []
+        for i in range(states.shape[0] - 1):
+            current_state = states[i]
+            next_state = states[i + 1]
+            input = inputs[i]
 
-#     return obstacle_penalty
+            # Predict the next state using the linearized dynamics
+            predicted_next_state = A @ (current_state - self.quadrotor.x_f) + B @ input + self.quadrotor.x_f
 
-def flatten_trajectory(trajectory):
-    """
-    Flattens the trajectory dictionary into a 1D array.
+            # Calculate the difference between the predicted and actual next state
+            state_diff = np.linalg.norm(predicted_next_state - next_state)
+            constraint_violations.append(state_diff)
 
-    Parameters:
-    trajectory (dict): Trajectory dictionary with keys 'state' and 'input'.
-
-    Returns:
-    numpy.ndarray: Flattened trajectory as a 1D array.
-    """
-    x_flat = trajectory['state'].flatten()
-    u_flat = trajectory['input'].flatten()
-    return np.concatenate([x_flat, u_flat])
-
-def reconstruct_trajectory(flat_trajectory, state_shape, input_shape):
-    """
-    Reconstructs the trajectory dictionary from a 1D array.
-
-    Parameters:
-    flat_trajectory (numpy.ndarray): Flattened trajectory as a 1D array.
-    state_shape (tuple): Shape of the state array.
-    input_shape (tuple): Shape of the input array.
-
-    Returns:
-    dict: Trajectory dictionary with keys 'state' and 'input'.
-    """
-    total_state_elements = np.prod(state_shape)
-    x_flat = flat_trajectory[:total_state_elements]
-    u_flat = flat_trajectory[total_state_elements:]
+        return np.array(constraint_violations)
     
-    x = x_flat.reshape(state_shape)
-    u = u_flat.reshape(input_shape)
+    def initial_state_constraint(self, flat_trajectory, initial_state):
+        trajectory = self.reconstruct_trajectory(flat_trajectory, self.state_shape, self.input_shape)
+        first_state = trajectory['state'][0]
+        
+        # Calculate the difference between the first state and the initial state
+        state_diff = np.linalg.norm(first_state - initial_state)
+        return state_diff
 
-    return {'state': x, 'input': u}
+    def flatten_trajectory(self, trajectory):
+        """
+        Flattens the trajectory dictionary into a 1D array.
 
+        Parameters:
+        trajectory (dict): Trajectory dictionary with keys 'state' and 'input'.
 
-def trajectory_optimizer(quadrotor, obstacles, initial_trajectory, N, goal, max_iter, tol):
-    """
-    """
+        Returns:
+        numpy.ndarray: Flattened trajectory as a 1D array.
+        """
+        x_flat = trajectory['state'].flatten()
+        u_flat = trajectory['input'].flatten()
+        
+        return np.concatenate([x_flat, u_flat])
 
-    trajectory = flatten_trajectory(initial_trajectory)
-    
-    state_shape = (N, 8)
-    input_shape = (N, 2)
+    def reconstruct_trajectory(self, flat_trajectory, state_shape, input_shape):
+        """
+        Reconstructs the trajectory dictionary from a 1D array.
 
-    # constraints = [{'type': 'ineq', 'fun': strict_obstacle_constraint, 'args': (quadrotor, obstacles, state_shape, input_shape)}]
+        Parameters:
+        flat_trajectory (numpy.ndarray): Flattened trajectory as a 1D array.
+        state_shape (tuple): Shape of the state array.
+        input_shape (tuple): Shape of the input array.
 
-    options = {'maxiter': max_iter, 'ftol': tol}
+        Returns:
+        dict: Trajectory dictionary with keys 'state' and 'input'.
+        """
+        total_state_elements = np.prod(state_shape)
+        x_flat = flat_trajectory[:total_state_elements]
+        u_flat = flat_trajectory[total_state_elements:]
+        
+        x = x_flat.reshape(state_shape)
+        u = u_flat.reshape(input_shape)
 
-    # Optimization problem setup
-    result = minimize(cost_function, trajectory, method = 'SLSQP', args = (quadrotor, obstacles, state_shape, input_shape, goal), options=options)
+        return {'state': x, 'input': u}
 
-    # Extract the optimized trajectory
-    optimized_trajectory = reconstruct_trajectory(result.x, state_shape, input_shape)
+    def visualize_trajectory(self, initial_trajectory, optimized_trajectory):
+        # Visualization of initial and optimized trajectories
+        plt.figure()
+        plt.plot(initial_trajectory['state'][:, 0], initial_trajectory['state'][:, 1], label='Initial Trajectory')
+        plt.plot(optimized_trajectory['state'][:, 0], optimized_trajectory['state'][:, 1], label='Optimized Trajectory')
+        plt.legend()
+        plt.show()
 
-    # Visualization of initial and optimized trajectories
-    plt.figure()
-    plt.plot(initial_trajectory['state'][:, 0], initial_trajectory['state'][:, 1], label='Initial Trajectory')
-    plt.plot(optimized_trajectory['state'][:, 0], optimized_trajectory['state'][:, 1], label='Optimized Trajectory')
-    plt.legend()
-    plt.show()
-
-    return optimized_trajectory
+# Usage
+# optimizer = TrajectoryOptimizer(quadrotor, obstacles, initial_trajectory, N, goal, max_iter, tol)
+# optimized_trajectory = optimizer.optimize_trajectory()
