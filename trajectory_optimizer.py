@@ -20,6 +20,9 @@ class TrajectoryOptimizer:
         self.quadrotor = quadrotor
         self.x_f = quadrotor.x_f
         self.u_f = quadrotor.u_f
+        self.Qf = quadrotor.Qf
+        self.Q = quadrotor.Q
+        self.R = quadrotor.R
         self.input_min = quadrotor.input_min
         self.input_max = quadrotor.input_max
         
