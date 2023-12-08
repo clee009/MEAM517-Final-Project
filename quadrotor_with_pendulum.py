@@ -310,7 +310,7 @@ class QuadrotorPendulum(VectorSystem):
         u_f = self.u_f
         x_f = self.x_f
 
-        A, B = self.GetLinearizedDynamics(u_f, x_f)
+        A, B = self.GetLinearizedDynamics(x_f, u_f)
         S = solve_continuous_are(A, B, self.Q, self.R)
         K = -inv(self.R) @ B.T @ S
         u = u_f + K @ (x_current - x_f)
