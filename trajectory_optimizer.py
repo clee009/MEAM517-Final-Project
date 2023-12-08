@@ -63,6 +63,8 @@ class TrajectoryOptimizer:
 
         prog.AddQuadraticCost(cost)
 
+
+
     def add_obstacle_constraints(self, prog, x, obstacles):
         for xk in x:
             # Get the end positions (e.g., tips) of the quadrotor for the current state
@@ -120,7 +122,7 @@ class TrajectoryOptimizer:
 
         return u_mpc + self.u_f
     
-    def simulate_quadrotor(self, x0, tf, xf, N, t_step, obstacles, initial_traj=None):
+    def simulate_quadrotor(self, x0, tf, xf, N, t_step, obstacles, max_iter, initial_traj):
         # Simulates a stabilized maneuver on the 2D quadrotor
         # system, with an initial value of x0
         t0 = 0.0
@@ -133,7 +135,7 @@ class TrajectoryOptimizer:
         u = [np.zeros((2,))]
         t = [t0]
 
-        while np.linalg.norm(np.array(x[-1][0:2]) - xf[0:2]) > 1e-3 and t[-1] < tf:
+        while np.linalg.norm(np.array(x[-1][0:2]) - xf[0:2]) > 1e-3 and t[-1] < tf and iter < max_iter:
             current_time = t[-1]
             current_x = x[-1]
             current_u_command = np.zeros(2)
