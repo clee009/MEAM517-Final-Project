@@ -15,7 +15,7 @@ import pydrake.symbolic as sym
 
 from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Variables
 
-class trajectory_optimizer:
+class TrajectoryOptimizer:
     def __init__(self, quadrotor):
         self.quadrotor = quadrotor
         self.x_f = quadrotor.x_f
