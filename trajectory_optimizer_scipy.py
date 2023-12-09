@@ -23,7 +23,7 @@ class TrajectoryOptimizer:
     def optimize_trajectory(self):
         flat_trajectory = self.flatten_trajectory(self.initial_trajectory)
         constraints = [
-            {'type': 'eq', 'fun': self.dynamics_constraint},
+            #{'type': 'eq', 'fun': self.dynamics_constraint},
             {'type': 'eq', 'fun': self.initial_state_constraint, 'args': (self.initial_trajectory['state'][0],)}
         ]
         result = minimize(self.cost_function, flat_trajectory, method='SLSQP', args=(self.state_shape, self.input_shape, self.goal), 
