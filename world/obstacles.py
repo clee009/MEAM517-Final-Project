@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import torch
 import numpy as np
 import configs
 import pydrake.symbolic as sym
@@ -10,6 +11,7 @@ class Obstacles:
         for key, value in configs.load_yaml(file).items():
             setattr(self, key, value)
 
+        self.boxes = torch.Tensor(self.boxes)
         self.regions = self._convex_segmentation()
         n = len(self.regions)
 

@@ -10,41 +10,43 @@ class SignedDistanceField(Obstacles):
         self.n = len(self.boxes)
     
 
-    def signed_distance_to_rectangle(self, state: torch.Tensor, idx):
-        x_point, y_point = state[:2]
+    def calc_sdf_single(self, state: torch.Tensor, idx):
+        x, y = state[:2]
         x_min, y_min, x_max, y_max = self.boxes[idx]
 
-        if x_point < x_min:
-            if y_point < y_min:
-                return torch.sqrt((x_min - x_point)**2 + (y_min - y_point)**2)  # Bottom-left corner
-            elif y_point > y_max:
-                return torch.sqrt((x_min - x_point)**2 + (y_point - y_max)**2)  # Top-left corner
+        if x < x_min:
+            if y < y_min:
+                return torch.hypot(x_min - x, y_min - y)  # Bottom-left corner
+            elif y > y_max:
+                return torch.hypot(x_min - x, y - y_max)  # Top-left corner
             else:
-                return x_min - x_point  # Left edge
-        elif x_point > x_max:
-            if y_point < y_min:
-                return torch.sqrt((x_point - x_max)**2 + (y_min - y_point)**2)  # Bottom-right corner
-            elif y_point > y_max:
-                return torch.sqrt((x_point - x_max)**2 + (y_point - y_max)**2) # Top-right corner
+                return x_min - x  # Left edge
+            
+        elif x > x_max:
+            if y < y_min:
+                return torch.hypot(x - x_max, y_min - y)  # Bottom-right corner
+            elif y > y_max:
+                return torch.hypot(x - x_max, y - y_max) # Top-right corner
             else:
-                return x_point - x_max  # Right edge
+                return x - x_max  # Right edge
+            
         else:
-            if y_point < y_min:
-                return y_min - y_point  # Bottom edge
-            elif y_point > y_max:
-                return y_point - y_max  # Top edge
+            if y < y_min:
+                return y_min - y  # Bottom edge
+            elif y > y_max:
+                return y - y_max  # Top edge
             else:
-                x, y, = x_point, y_point
-                return -torch.min(x_max - x, y_max - y, x - x_min, y - y_min)
+                dx = torch.max(x - x_max, x_min - x)
+                dy = torch.max(y - y_max, y_min - y)
+                return torch.max(dx, dy)
 
     
 
-    def calc_sdf(self, state):
-        min_sdf = np.inf
-        for i in range(self.n):
-            sdf = self.signed_distance_to_rectangle(state, i)
-            min_sdf = torch.min(min_sdf, sdf if i else -sdf)
-
+    def calc_sdf(self, x: torch.Tensor):
+        min_sdf = -self.calc_sdf_single(x, 0)
+        for i in range(1, self.n):
+            min_sdf = torch.min(self.calc_sdf_single(x, i), min_sdf)
+        
         return min_sdf
     
     
@@ -52,12 +54,12 @@ class SignedDistanceField(Obstacles):
         x_min, y_min, x_max, y_max = self.boxes[0]
 
         # Generate a grid of points
-        x_vals = np.linspace(x_min, x_max, int(100 * (x_max - x_min)))
-        y_vals = np.linspace(y_max, y_min, int(100 * (y_max - y_min)))
+        x_vals = np.linspace(x_min, x_max, int(10 * (x_max - x_min)))
+        y_vals = np.linspace(y_max, y_min, int(10 * (y_max - y_min)))
         X, Y = np.meshgrid(x_vals, y_vals)
 
         # Calculate the signed distance for each point in the grid
-        sdf_values = np.vectorize(lambda x, y: self.calc_sdf([x, y]))(X, Y)
+        sdf_values = np.vectorize(lambda x, y: self.calc_sdf(torch.Tensor([x, y])).item())(X, Y)
 
         # Plot the signed distance field
         plt.imshow(sdf_values, cmap='jet')
