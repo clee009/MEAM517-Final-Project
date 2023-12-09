@@ -32,11 +32,7 @@ class iLQR:
         with torch.no_grad():
             for xk, uk in zip(xx, uu):
                 cost += self.running_cost(xk, uk)
-                b = self.sdf.barrier_func(xk).float()
-                if torch.isinf(b):
-                    print(b, xk)
-                    
-                cost += self.sdf.barrier_func(xk).float()
+                cost += self.sdf_weight * self.sdf.barrier_func(xk).float()
 
         return cost + self.terminal_cost(xx[-1])
     
@@ -174,18 +170,19 @@ class iLQR:
 
         for k in range(self.N-2,-1,-1):
             Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
-            Hb = hessian (self.sdf.barrier_func, torch.Tensor(xx[k]))
+            Hb = hessian(self.sdf.barrier_func, torch.Tensor(xx[k]))
             gb = jacobian(self.sdf.barrier_func, torch.Tensor(xx[k]))
 
-            Hl = self.hess_running_cost(xx[k], uu[k]) + Hb.numpy()
-            gl = self.grad_running_cost(xx[k], uu[k]) + gb.numpy()
+            Hl = self.hess_running_cost(xx[k], uu[k])
+            gl = self.grad_running_cost(xx[k], uu[k])
+            Hl[:8,:8] += self.sdf_weight * Hb.numpy()
+            gl[:8] += self.sdf_weight * gb.numpy()
 
-            Qx = gl[:self.nx] + Ak.T @ g_last
-            Qu = gl[self.nx:] + Bk.T @ g_last
-            Qxx = Hl[:self.nx,:self.nx] + Ak.T @ H_last @ Ak
-            Quu = Hl[self.nx:,self.nx:] + Bk.T @ H_last @ Bk
-            Qux = Hl[self.nx:,:self.nx] + Bk.T @ H_last @ Ak
-            Qxu = Qux.T
+            Qx = gl[:8] + Ak.T @ g_last
+            Qu = gl[8:] + Bk.T @ g_last
+            Qxx = Hl[:8,:8] + Ak.T @ H_last @ Ak
+            Quu = Hl[8:,8:] + Bk.T @ H_last @ Bk
+            Qux = Hl[8:,:8] + Bk.T @ H_last @ Ak
             
             KK[k] = -np.linalg.solve(Quu, Qux)
             dd[k] = -np.linalg.solve(Quu, Qu)
@@ -195,6 +192,21 @@ class iLQR:
         # TODO: compute backward pass
 
         return dd, KK
+    
+
+    def visualize_trajectory(self, xx, i):
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        ax = fig.add_subplot()
+
+        self.sdf.plot_obs(ax)
+        xx = np.array([xk[:2] for xk in xx])
+
+        ax.plot(xx[:,0], xx[:,1], '--', label='actual trajectory')
+        ax.axis('equal')
+        ax.set_title("iter: " + str(i))
+        plt.show()
+
 
     def calculate_optimal_trajectory(self, uu_guess, dt):
 
@@ -222,9 +234,12 @@ class iLQR:
         i = 0
         print(f'cost: {Jnext}')
         while np.abs(Jprev - Jnext) > 1e-3 and i < 100:
+            if self.visualize:
+                self.visualize_trajectory(xx, i)
+
             dd, KK = self.backward_pass(xx, uu)
             xx, uu = self.forward_pass(xx, uu, dd, KK)
-
+            
             Jprev = Jnext
             Jnext = self.total_cost(xx, uu)
             print(f'cost: {Jnext}')

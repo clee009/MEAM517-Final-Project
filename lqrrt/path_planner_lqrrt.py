@@ -91,7 +91,7 @@ class PathPlannerLQRRT:
 
         plt.xlim([x_min, x_max])
         plt.ylim([y_min, y_max])
-        self.obs.plot(plt.gca())
+        self.obs.plot_obs(plt.gca())
 
         plt.scatter(planner.tree.state[:,0], planner.tree.state[:,1])
         for ID in range(planner.tree.size):
@@ -105,10 +105,11 @@ class PathPlannerLQRRT:
 
     def get_trajectory(self, planner: lqrrt.Planner):
         x_traj = [self.x0]
-        for u in planner.u_seq:
-            x_traj.append(self.dynamics(x_traj[-1], u, self.dt))
+        u_traj = np.array(planner.u_seq[1:])
+        for u in u_traj:
+            x_traj.append(self.dynamics(x_traj[-1], u, planner.dt))
 
-        return np.array(x_traj), np.array(planner.u_seq)
+        return np.array(x_traj), u_traj
     
 
     def xrand_gen(self, planner):

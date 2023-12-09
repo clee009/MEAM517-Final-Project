@@ -1,2 +1,4 @@
 dt: 0.1
-alpha: 1
+alpha: 0.1
+sdf_weight: 1
+visualize: True
