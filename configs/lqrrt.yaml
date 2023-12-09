@@ -1,5 +1,4 @@
 dt: 0.05
-traj_dt: 0.5
 goal_buffer: 0.1 
 goal_bias: 0.2
 horizon: 30

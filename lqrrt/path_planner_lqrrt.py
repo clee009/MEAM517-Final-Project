@@ -103,20 +103,12 @@ class PathPlannerLQRRT:
         plt.show()
 
 
-    def interpolate_trajectory(self, planner: lqrrt.Planner):
-        T = planner.T  # s
-        t_arr = np.arange(0, T, self.traj_dt)
+    def get_trajectory(self, planner: lqrrt.Planner):
+        x_traj = [self.x0]
+        for u in planner.u_seq:
+            x_traj.append(self.dynamics(x_traj[-1], u, self.dt))
 
-        # Preallocate results memory
-        x_history = np.zeros((len(t_arr), 8))
-        u_history = np.zeros((len(t_arr), 2))
-
-        # Interpolate plan
-        for i, t in enumerate(t_arr):
-            x_history[i, :] = planner.get_state(t)
-            u_history[i, :] = planner.get_effort(t)
-
-        return t_arr, x_history, u_history
+        return np.array(x_traj), np.array(planner.u_seq)
     
 
     def xrand_gen(self, planner):

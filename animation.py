@@ -55,7 +55,7 @@ class Animation:
             ax.clear()
 
             lines = []
-            lines += self.obs.plot(ax)
+            lines += self.obs.plot_obs(ax)
             lines += self.plot_trajectory(frame_ids[i], ax)
             lines += self.plot_quadrotor(anim_states[i], ax)
 
