@@ -2,7 +2,7 @@ import numpy as np
 import lqrrt
 import configs
 from quadrotor import QuadrotorPendulum
-from world import Obstacles
+from world import SignedDistanceField
 from scipy.linalg import solve_continuous_are
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ import random
 
 
 class PathPlannerLQRRT:
-    def __init__(self, file: str, quad: QuadrotorPendulum, obs: Obstacles):
+    def __init__(self, file: str, quad: QuadrotorPendulum, obs: SignedDistanceField):
         for key, value in configs.load_yaml(file).items():
             setattr(self, key, value)
 

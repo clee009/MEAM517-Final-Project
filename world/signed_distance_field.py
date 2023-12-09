@@ -1,6 +1,7 @@
 import numpy as np
 from world import Obstacles
 import matplotlib.pyplot as plt
+import torch
 
 
 class SignedDistanceField(Obstacles):
@@ -9,22 +10,22 @@ class SignedDistanceField(Obstacles):
         self.n = len(self.boxes)
     
 
-    def signed_distance_to_rectangle(self, state, idx):
+    def signed_distance_to_rectangle(self, state: torch.Tensor, idx):
         x_point, y_point = state[:2]
         x_min, y_min, x_max, y_max = self.boxes[idx]
 
         if x_point < x_min:
             if y_point < y_min:
-                return ((x_min - x_point)**2 + (y_min - y_point)**2)**0.5  # Bottom-left corner
+                return torch.sqrt((x_min - x_point)**2 + (y_min - y_point)**2)  # Bottom-left corner
             elif y_point > y_max:
-                return ((x_min - x_point)**2 + (y_point - y_max)**2)**0.5  # Top-left corner
+                return torch.sqrt((x_min - x_point)**2 + (y_point - y_max)**2)  # Top-left corner
             else:
                 return x_min - x_point  # Left edge
         elif x_point > x_max:
             if y_point < y_min:
-                return ((x_point - x_max)**2 + (y_min - y_point)**2)**0.5  # Bottom-right corner
+                return torch.sqrt((x_point - x_max)**2 + (y_min - y_point)**2)  # Bottom-right corner
             elif y_point > y_max:
-                return ((x_point - x_max)**2 + (y_point - y_max)**2)**0.5  # Top-right corner
+                return torch.sqrt((x_point - x_max)**2 + (y_point - y_max)**2) # Top-right corner
             else:
                 return x_point - x_max  # Right edge
         else:
@@ -34,7 +35,7 @@ class SignedDistanceField(Obstacles):
                 return y_point - y_max  # Top edge
             else:
                 x, y, = x_point, y_point
-                return -min(x_max - x, y_max - y, x - x_min, y - y_min)
+                return -torch.min(x_max - x, y_max - y, x - x_min, y - y_min)
 
     
 
@@ -42,9 +43,10 @@ class SignedDistanceField(Obstacles):
         min_sdf = np.inf
         for i in range(self.n):
             sdf = self.signed_distance_to_rectangle(state, i)
-            min_sdf = min(min_sdf, sdf if i else -sdf)
+            min_sdf = torch.min(min_sdf, sdf if i else -sdf)
 
         return min_sdf
+    
     
     def plot_sdf(self):
         x_min, y_min, x_max, y_max = self.boxes[0]
@@ -66,8 +68,6 @@ class SignedDistanceField(Obstacles):
         plt.show()
 
 
-    def barrier_gradient(self, x):
-        sdf, gradient_sdf = self.signed_distance_field_and_gradient(x)
-        gradient_barrier = -gradient_sdf / self.epsilon * np.exp(-sdf / self.epsilon)
-        return gradient_barrier
-    
+    def barrier_func(self, x):
+        sdf = self.calc_sdf(x)
+        return torch.exp(-self.gamma * sdf)
