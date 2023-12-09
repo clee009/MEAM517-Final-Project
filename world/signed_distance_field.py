@@ -50,8 +50,8 @@ class SignedDistanceField(Obstacles):
         x_min, y_min, x_max, y_max = self.boxes[0]
 
         # Generate a grid of points
-        x_vals = np.linspace(x_min, x_max, 500)
-        y_vals = np.linspace(y_min, y_max, 500)
+        x_vals = np.linspace(x_min, x_max, int(100 * (x_max - x_min)))
+        y_vals = np.linspace(y_max, y_min, int(100 * (y_max - y_min)))
         X, Y = np.meshgrid(x_vals, y_vals)
 
         # Calculate the signed distance for each point in the grid
@@ -64,6 +64,7 @@ class SignedDistanceField(Obstacles):
         plt.xlabel('X-axis')
         plt.ylabel('Y-axis')
         plt.show()
+
 
     def barrier_gradient(self, x):
         sdf, gradient_sdf = self.signed_distance_field_and_gradient(x)
