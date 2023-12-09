@@ -32,7 +32,7 @@ class iLQR:
         with torch.no_grad():
             for xk, uk in zip(xx, uu):
                 cost += self.running_cost(xk, uk)
-                cost += self.sdf.barrier_func(xk).float()
+                cost += self.sdf_weight * self.sdf.barrier_func(xk).float()
 
         return cost + self.terminal_cost(xx[-1])
     
@@ -148,8 +148,10 @@ class iLQR:
         xtraj[0] = xx[0]
         for k in range(self.N-1):
           delta_xk = xtraj[k] - xx[k]
-          uk = uu[k] + KK[k] @ delta_xk + self.alpha * dd[k]
-          utraj[k] = np.clip(uk, self.quad.input_min, self.quad.input_max)
+          du = KK[k] @ delta_xk + self.alpha * dd[k]
+          #du *= self.lr / np.linalg.norm(du)
+          #uk = uu[k] + KK[k] @ delta_xk + self.alpha * dd[k]
+          utraj[k] = np.clip(uu[k] + du, self.quad.input_min, self.quad.input_max)
           #A, B = self.get_linearized_discrete_dynamics(xtraj[k], utraj[k])
           xtraj[k+1] = self.dynamics(xtraj[k], utraj[k])
           
@@ -176,8 +178,8 @@ class iLQR:
 
             Hl = self.hess_running_cost(xx[k], uu[k])
             gl = self.grad_running_cost(xx[k], uu[k])
-            Hl[:8,:8] += Hb.numpy()
-            gl[:8] += gb.numpy()
+            Hl[:8,:8] += self.sdf_weight * Hb.numpy()
+            gl[:8] += self.sdf_weight * gb.numpy()
 
             Qx = gl[:8] + Ak.T @ g_last
             Qu = gl[8:] + Bk.T @ g_last
