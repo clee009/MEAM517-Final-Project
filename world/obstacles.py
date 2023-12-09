@@ -7,7 +7,9 @@ import pydrake.symbolic as sym
 
 
 class Obstacles:
-    def __init__(self, file: str):
+    def __init__(self, file: str, epsilon = 0.025):
+        self.epsilon = epsilon
+        
         for key, value in configs.load_yaml(file).items():
             setattr(self, key, value)
 

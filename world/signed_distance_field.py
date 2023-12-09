@@ -5,9 +5,10 @@ import torch
 
 
 class SignedDistanceField(Obstacles):
-    def __init__(self, file: str):
+    def __init__(self, file: str, gamma = 3.6):
         super().__init__(file)
         self.n = len(self.boxes)
+        self.gamma = gamma
     
 
     def calc_sdf_single(self, state: torch.Tensor, idx):
@@ -50,7 +51,7 @@ class SignedDistanceField(Obstacles):
         return min_sdf
     
     
-    def plot_sdf(self):
+    def plot_barrier(self):
         x_min, y_min, x_max, y_max = self.boxes[0]
 
         # Generate a grid of points
@@ -59,7 +60,7 @@ class SignedDistanceField(Obstacles):
         X, Y = np.meshgrid(x_vals, y_vals)
 
         # Calculate the signed distance for each point in the grid
-        sdf_values = np.vectorize(lambda x, y: self.calc_sdf(torch.Tensor([x, y])).item())(X, Y)
+        sdf_values = np.vectorize(lambda x, y: self.barrier_func(torch.Tensor([x, y])).item())(X, Y)
 
         # Plot the signed distance field
         plt.imshow(sdf_values, cmap='jet')
