@@ -39,16 +39,19 @@ class TrajectoryOptimizer:
         inputs = trajectory['input']
 
         energy_cost = 0
-        goal_distance_cost = 0
+        distance_cost = 0
+        goal_cost = 0
 
         for i in range(1, states.shape[0]):
             u = inputs[i]
             energy_cost += np.sum(u**2)  # Energy cost: sum of squared inputs
 
             x = states[i]
-            goal_distance_cost += np.linalg.norm(x - goal)  # Distance to goal
+            distance_cost += np.linalg.norm(x[i][:2] - x[i-1][:2])  # Distance to goal
 
-        total_cost = energy_cost + goal_distance_cost  # Combine costs
+        goal_cost = np.linalg.norm(x[-1] - goal)
+
+        total_cost = energy_cost +distance_cost + goal_cost # Combine costs
 
         print("cost =", total_cost)
         print("states =", states[self.N // 2])
