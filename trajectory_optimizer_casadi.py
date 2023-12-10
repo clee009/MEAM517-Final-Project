@@ -115,11 +115,13 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
 
     # Add input constraints
     input_max = params['input_max']
+    # input_max = input_max * np.ones((1, 2))
     input_min = params['input_min']
+    # input_min = input_min * np.ones((1, 2))
     for k in range(N-1):
         uk = U[k, :]
-        for ui in uk:
-            opti.subject_to(opti.bounded(input_min, ui, input_max))
+        for i in range(2):
+            opti.subject_to(opti.bounded(input_min, uk[i], input_max))
 
     # Add boundary constraints
     boundary = obstacles[0]
