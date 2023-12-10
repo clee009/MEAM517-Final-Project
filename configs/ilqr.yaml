@@ -1,4 +1,4 @@
 alpha: 1
-q1: 10
-q2: -1 # must be neg!
+q1: 8
+q2: -1.2 # must be neg!
 enable_visualization: True

@@ -272,13 +272,18 @@ class QuadrotorPendulum(VectorSystem):
         # and use it to compute the MPC input u
 
         return u_mpc + self.u_f
+    
 
-    def compute_lqr_feedback(self, x_current):
+    def compute_lqr_feedback(self, x_current, x_goal = None):
         '''
         Infinite horizon LQR controller
         '''
+
+        if x_goal is None:
+            x_goal = self.x_f
+
         u_f = self.u_f
-        x_f = self.x_f
+        x_f = x_goal
 
         A, B = self.GetLinearizedDynamics(x_f, u_f)
         S = solve_continuous_are(A, B, self.Q, self.R)

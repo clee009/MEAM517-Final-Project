@@ -7,6 +7,7 @@ from lqrrt import PathPlannerLQRRT
 import matplotlib.pyplot as plt
 
 import configs
+from tqdm import tqdm
 
 
 class iLQR:
@@ -39,7 +40,12 @@ class iLQR:
     
 
     def calc_barrier_cost(self, xk):
-        return self.q1 * np.exp(self.q2 * self.sdf.calc_sdf(xk))
+        sdf = self.sdf.calc_sdf(xk)
+        if sdf >= 0:
+            return 0
+        
+        return self.q1 * sdf ** 2
+        #return self.q1 * np.exp(self.q2 * self.sdf.calc_sdf(xk))
          
 
     def running_cost(self, xk, uk, xd) -> float:
@@ -61,8 +67,10 @@ class iLQR:
         grad[:8] = (xk - xd).T @ self.Q
         grad[8:] = (uk - self.uf).T @ self.R
 
-        c = self.q2 * self.calc_barrier_cost(xk)
-        grad[:2] += c * self.sdf.calc_grad(xk)
+        #c = self.q2 * self.calc_barrier_cost(xk)
+        sdf = self.sdf.calc_sdf(xk)
+        if sdf < 0:
+            grad[:2] += 2 * self.q1 * sdf * self.sdf.calc_grad(xk)
 
         return grad 
     
@@ -74,9 +82,13 @@ class iLQR:
         H[:8,:8] = self.Q
         H[8:,8:] = self.R
 
-        c = self.q2**2 * self.calc_barrier_cost(xk)
-        grad = self.sdf.calc_grad(xk)
-        H[:2,:2] += c * grad @ grad.T
+        #c = self.q2**2 * self.calc_barrier_cost(xk)
+        #grad = self.sdf.calc_grad(xk)
+
+        sdf = self.sdf.calc_sdf(xk)
+        if sdf < 0:
+            grad = self.sdf.calc_grad(xk)
+            H[:2,:2] += 2* self.q1 * grad @ grad.T
 
         return H
     
@@ -175,6 +187,19 @@ class iLQR:
         ax.set_title("iteration: %d" % i)
         plt.show()
 
+    
+    def flatten_trajectory(self, xx, uu):
+        dp = [0]
+        for xk, uk, xd in zip(xx, uu, xx[1:]):
+            cost = self.running_cost(xk, uk, xd)
+            dp.append(dp[-1] + cost)
+
+        policy = list(range(len(xx)))
+        for i in tqdm(range(len(xx))):
+            for j in range(i+1, len(xx)):
+                xf = xx[j]
+                cost = 0
+
 
     def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
         self.xf = xf
@@ -190,12 +215,11 @@ class iLQR:
         uu = uu_guess
 
         damping = 1e5
-        from tqdm import tqdm
         for i in range(100):
             if self.enable_visualization:
                 self.visualize(xx, i)
 
-            for j in tqdm(range(30)):
+            for j in range(30):
                 dd, KK = self.backward_pass(xx, uu, damping)
                 xx_temp, uu_temp = self.forward_pass(xx, uu, dd, KK)
                 feasible = all(self.sdf.is_state_feasible(x) for x in xx_temp)
