@@ -131,7 +131,7 @@ class iLQR:
         return xtraj, utraj
     
 
-    def backward_pass(self, xx, uu):
+    def backward_pass(self, xx, uu, damping):
         dd = [np.zeros((2,))] * (self.N - 1)
         KK = [np.zeros((2, 8))] * (self.N - 1)
         H_last = self.hess_terminal_cost(xx[-1])
@@ -147,6 +147,10 @@ class iLQR:
             Qxx = Hl[:8,:8] + Ak.T @ H_last @ Ak
             Quu = Hl[8:,8:] + Bk.T @ H_last @ Bk
             Qux = Hl[8:,:8] + Bk.T @ H_last @ Ak
+
+            evals, evecs = np.linalg.eig(Quu)
+            evals = np.maximum(0, evals) + damping
+            Quu = evecs @ np.diag(evals) @ evecs.T
             
             KK[k] = -np.linalg.solve(Quu, Qux)
             dd[k] = -np.linalg.solve(Quu, Qu)
@@ -182,24 +186,30 @@ class iLQR:
         for k in range(self.N-1):
             xx.append(self.dynamics(xx[k], uu_guess[k]))
 
-        Jprev = np.inf
-        Jnext = self.total_cost(xx, uu_guess)
-        print(Jnext)
+        J = self.total_cost(xx, uu_guess)
         uu = uu_guess
-        KK = None
 
-        i = 0
-        while np.abs(Jprev - Jnext) > 1e-3 and i < 100:
+        damping = 1e5
+        for i in range(100):
             if self.enable_visualization:
                 self.visualize(xx, i)
 
-            dd, KK = self.backward_pass(xx, uu)
-            xx, uu = self.forward_pass(xx, uu, dd, KK)
+            for j in range(30):
+                dd, KK = self.backward_pass(xx, uu, damping)
+                xx_temp, uu_temp = self.forward_pass(xx, uu, dd, KK)
+                feasible = all(self.sdf.is_state_feasible(x) for x in xx_temp)
+                J_temp = self.total_cost(xx_temp, uu_temp)
+                if not feasible or J_temp >= J:
+                    damping *= 4
+                    damping = min(damping, 1e8)
+                else:
+                    J = J_temp
+                    xx, uu = xx_temp, uu_temp
+                    damping /= 8
+                    damping = max(damping, 1e-4)
+                    break
 
-            Jprev = Jnext
-            Jnext = self.total_cost(xx, uu)
-            print(f'cost: {Jnext}')
-            i += 1
+            print("[iter-{}]\tJ: {:.3f}\tlambda: {:.3e}\tlm-iters:{}".format(i, J, damping, j))
 
-        print(f'Converged to cost {Jnext}')
+        print(f'Converged to cost {J}')
         return xx, uu
