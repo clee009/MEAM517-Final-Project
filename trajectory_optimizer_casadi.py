@@ -320,4 +320,4 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
         print("Value of U:", opti.debug.value(U))
 
         success = False
-        return -1, -1, success
+        return opti.debug.value(X[N//2,:]), opti.debug.value(U), success
