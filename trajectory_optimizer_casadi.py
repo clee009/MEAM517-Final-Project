@@ -132,10 +132,8 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
     # Add top box obstacle constraints
     box = obstacles[2]
     xmin, ymin, xmax, ymax = box
-
     # Define the margins around the box where the quadrotor should not enter
     margin = 0.5  # Distance margin
-
     for k in range(N):
         # Extract the position of the quadrotor at step k
         xk = X[k, 0]
