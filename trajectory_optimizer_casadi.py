@@ -163,7 +163,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
 
     # Cost function on input
     cost = 0
-    for k in range(N):
+    for k in range(N-1):
         cost += ca.sumsqr(U[k, :])
 
     opti.minimize(cost)
