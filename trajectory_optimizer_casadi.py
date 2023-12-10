@@ -64,6 +64,24 @@ class SignedDistanceField(Obstacles):
         barrier_arg = sdf + epsilon
         # return ca.exp(-self.gamma * sdf)
         return -ca.log(self.gamma * barrier_arg)
+    
+def ellipsoidal_function(state, box, lambda_param):
+    """
+    """
+    x, y = state[0, 0], state[0, 1]
+
+    xmin, ymin, xmax, ymax = box
+
+    # Define numerical values for the parameters
+    c_x = (xmin + xmax) / 2   # Numerical value for the center x
+    c_y = (ymin + ymax) / 2  # Numerical value for the center y
+    r_x = (xmax - xmin) / 2  # Numerical value for the size in x
+    r_y = (ymax - ymin) / 2  # Numerical value for the size in y
+
+    # Define the cost function directly using numerical values
+    penalty = 1 / (((x - c_x)**2 / r_x + (y - c_y)**2 / r_y)**lambda_param + 1)
+
+    return penalty
 
 def get_nonlinear_dynamics(q, qd, params):
         
@@ -162,7 +180,7 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
-def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, gamma, 
+def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, lambda_param, 
                         opt_params = {
                             'max_iter': 3000,
                             'acceptable_tol': 1e-6,
@@ -232,21 +250,21 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
             opti.subject_to(opti.bounded(input_min - u_f, uk[0, i], input_max - u_f))
 
     # Add boundary constraints
-    xmin, ymin, xmax, ymax = boundary
+    # xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
-    for k in range(N):
-        # Extract the position state at timestep k
-        xk = X[k, 0]
-        yk = X[k, 1]
+    # for k in range(N):
+    #     # Extract the position state at timestep k
+    #     xk = X[k, 0]
+    #     yk = X[k, 1]
 
-        # Add boundary constraints
-        opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
-        opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+    #     # Add boundary constraints
+    #     opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
+    #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
     box = boxes[0]
-    xmin, ymin, xmax, ymax = box
+    # xmin, ymin, xmax, ymax = box
     print("box =", box)
     # Define the margins around the box where the quadrotor should not enter
     # margin = 0  # Distance margin
@@ -280,17 +298,17 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     #     barrier += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
     # Obstacle barrier function constraint
-    epsilon = 1e-3  # Small offset to prevent the log from blowing up
-    barrier = 0
-    for k in range(N):
-        xk, yk = X[k, 0], X[k, 1]
-        barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
-        barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
-        barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
-        barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
+    # epsilon = 1e-3  # Small offset to prevent the log from blowing up
+    # barrier = 0
+    # for k in range(N):
+    #     xk, yk = X[k, 0], X[k, 1]
+    #     barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
+    #     barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
+    #     barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
+    #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
     # Obstacle signed distance field
-    # sdf = SignedDistanceField("./configs/world.yaml", gamma)
+    # sdf = SignedDistanceField("./configs/world.yaml", lambda_param)
     # barrier = 0
     # for k in range(N-1):
     #     barrier += sdf.barrier_func(X[k, :])
@@ -298,11 +316,10 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     # Cost function on input
     cost = 0
     for k in range(N-1):
-        cost += ca.sumsqr(U[k, :])
+        cost += ca.sumsqr(U[k, :]) + alpha * ellipsoidal_function(X[k, :], box, lambda_param)
 
-    # opti.minimize(cost)
-    # opti.minimize(cost + alpha * penalty)
-    opti.minimize(cost + alpha * barrier)
+    opti.minimize(cost)
+    # opti.minimize(cost + alpha * barrier)
 
     # Solve the optimization problem
     opts = {
