@@ -110,11 +110,8 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         xk_next = X[k+1, :]
         uk = U[k, :]
         xe = xk - x_f
-        xe = xe.reshape(8, 1)
-        print("xe shape =", xe)
-        uk = uk.reshape(8, 1)
-        xk_collocation = ca.mtimes(A, xe) + ca.mtimes(B, uk) + x_f.reshape(8, 1)
-        opti.subject_to(xk_next == xk_collocation.reshape(1, 8))
+        xk_collocation = ca.mtimes(A, ca.reshape(xe, 8, 1)) + ca.mtimes(B, ca.reshape(uk, 8, 1)) + x_f.reshape(8, 1)
+        opti.subject_to(xk_next == ca.reshape(xk_collocation, 1, 8))
 
     # Add input constraints
     input_max = params['input_max']
