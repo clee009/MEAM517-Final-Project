@@ -80,6 +80,9 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
     # Start optimization problem
     opti = ca.Opti()
 
+    # Get obstacles
+    boundary, boxes = obstacles.get_world()
+
     # Define decision variables for states and control inputs
     X = opti.variable(N, 8)  # State trajectory
     U = opti.variable(N-1, 2)   # Control inputs
@@ -124,7 +127,6 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
             opti.subject_to(opti.bounded(input_min, uk[0, i], input_max))
 
     # Add boundary constraints
-    boundary = obstacles[0]
     xmin, ymin, xmax, ymax = boundary
 
     for k in range(N):
@@ -137,7 +139,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
-    box = obstacles[2]
+    box = boxes[1]
     xmin, ymin, xmax, ymax = box
     # Define the margins around the box where the quadrotor should not enter
     margin = 0.5  # Distance margin
