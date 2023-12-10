@@ -174,7 +174,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
 
         penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
-    alpha = 1
+    alpha = 10
 
     # Cost function on input
     cost = 0
