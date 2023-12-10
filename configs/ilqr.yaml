@@ -1,5 +1,7 @@
 alpha: 1
-q1: 8
+q1: 30
 q2: -1.2 # must be neg!
-dp_horizon: 30
+
+flatten_steps: 3
+flatten_iters: 60
 enable_visualization: True
