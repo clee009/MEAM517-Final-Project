@@ -176,23 +176,23 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     #     penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
     # Obstacle barrier function constraint
-    epsilon = 1e-3  # Small offset to prevent the log from blowing up
-    barrier = 0
-    for k in range(N):
-        xk, yk = X[k, 0], X[k, 1]
-        barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
-        barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
-        barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
-        barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
+    # epsilon = 1e-3  # Small offset to prevent the log from blowing up
+    # barrier = 0
+    # for k in range(N):
+    #     xk, yk = X[k, 0], X[k, 1]
+    #     barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
+    #     barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
+    #     barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
+    #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
     # Cost function on input
     cost = 0
     for k in range(N-1):
         cost += ca.sumsqr(U[k, :])
 
-    # opti.minimize(cost)
+    opti.minimize(cost)
     # opti.minimize(cost + alpha * penalty)
-    opti.minimize(cost + alpha * barrier)
+    # opti.minimize(cost + alpha * barrier)
 
     # Solve the optimization problem
     opti.solver("ipopt")
