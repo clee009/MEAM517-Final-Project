@@ -267,7 +267,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
 
     # Obstacle signed distance field
     sdf = SignedDistanceField("./configs/world.yaml", gamma=1)
-    sdf.plot_barrier()
+    # sdf.plot_barrier()
     barrier = 0
     for k in range(N):
         barrier += sdf.barrier_func(X[k, :])
