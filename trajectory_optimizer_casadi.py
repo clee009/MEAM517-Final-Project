@@ -74,8 +74,8 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         "input_min": quadrotor.input_min
     }
 
-    x_f = quadrotor.x_f
-    u_f = quadrotor.u_f
+    x_f = quadrotor.x_f.reshape(1, 8)
+    u_f = quadrotor.u_f.reshape(1, 2)
 
     # Start optimization problem
     opti = ca.Opti()
