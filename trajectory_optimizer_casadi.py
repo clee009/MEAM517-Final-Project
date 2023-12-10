@@ -178,11 +178,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         # Post-processing
         x_opt = sol.value(X)
         u_opt = sol.value(U)
-
+        return x_opt, u_opt
+    
     except RuntimeError as e:
         print("Solver failed:", e)
         # Evaluate and print the value of a decision variable or expression
         print("Value of X:", opti.debug.value(X))
         print("Value of U:", opti.debug.value(U))
-
-    return x_opt, u_opt
+        return
