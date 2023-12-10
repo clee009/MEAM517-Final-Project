@@ -60,7 +60,7 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
-def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
+def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     """
     """
     # Define parameters
@@ -173,8 +173,6 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         inside_box = inside_x_bounds * inside_y_bounds
 
         penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
-
-    alpha = 10
 
     # Cost function on input
     cost = 0
