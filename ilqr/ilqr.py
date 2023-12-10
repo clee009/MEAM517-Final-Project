@@ -191,62 +191,65 @@ class iLQR:
     
     def flatten_trajectory(self, xx, uu):
         dp = [0]
-        for xk, uk, xd in zip(xx, uu, xx[1:]):
+        policy = [-1]
+        for i, (xk, uk, xd) in enumerate(zip(xx, uu, xx[1:])):
             cost = self.running_cost(xk, uk, xd)
             dp.append(dp[-1] + cost)
-
-        policy = [(-1, [], [])]
-        for i, (xk, uk, xd) in enumerate(zip(xx, uu, xx[1:])):
-            policy.append((i, [xk, xd], [uk]))
+            policy.append(i)
 
         for i in tqdm(range(len(xx))):
-            for j in range(i+1, min(len(xx), i+6)):
-                max_cost = dp[j]-dp[i]
-                cost, xx_tmp, uu_tmp = self.calc_lqr_cost_to_go(xx[i], xx[j], max_cost)
-                if not xx_tmp:
+            iend =  min(len(xx), i+1+self.dp_horizon)
+            for j in range(i+1, iend):
+                max_cost = dp[j] - dp[i]
+                cost = self.calc_lqr_cost(xx[i], xx[j], max_cost, j - i)
+                if cost >= max_cost:
                     break
 
-                if cost < max_cost:
-                    dp[j] = dp[i] + cost
-                    policy[j] = i, xx_tmp, uu_tmp
+                dp[j] = dp[i] + cost
+                policy[j] = i
+
                     
         way_points = [len(uu)]
         while way_points[-1] != 0:
-            idx, _, _ = policy[way_points[-1]]
+            idx = policy[way_points[-1]]
             way_points.append(idx)
 
         
-        print(way_points)
-        xx_new, uu_new = [xx[0]], []
+        print(len(way_points))
+        xx_new = [xx[i] for i in way_points[::-1]]
+        '''
         for i in way_points[::-1]:
             _, xx_tmp, uu_tmp = policy[i]
+            if not xx_tmp or uu_tmp:
+                print(i)
+
             uu_new += uu_tmp
             xx_new += xx_tmp[1:]
+        '''
         
-        print("pruned-size:", len(uu_new), "\toriginal:", len(uu))
-        return xx_new, uu_new
+        return xx_new, []
 
     
-    def calc_lqr_cost_to_go(self, x0, xf, max_cost):
-        xx = [np.copy(x0)]
-        uu = []
+    def calc_lqr_cost(self, x0, xf, max_cost, horizon):
+        xk = np.copy(x0)
 
         cost = 0
-        while not (np.abs(xx[-1] - xf) <= self.eps).all():
-            uk = self.quad.compute_lqr_feedback(xx[-1], x_goal=xf)
+        i = 0
+        while not (np.abs(xk - xf) <= self.eps).all() and i < horizon:
+            uk = self.quad.compute_lqr_feedback(xk, x_goal=xf)
             uk = np.clip(uk, self.quad.input_min, self.quad.input_max)
-            xd = self.dynamics(xx[-1], uk)
+            xd = self.dynamics(xk, uk)
             if not self.sdf.is_state_feasible(xd):
-                return np.inf, [], []
+                return np.inf
                 
-            cost += self.running_cost(xx[-1], uk, xd)
+            cost += self.running_cost(xk, uk, xd)
             if cost >= max_cost:
-                return np.inf, [], []
+                return np.inf
 
-            xx.append(xd)
-            uu.append(uk)
+            xk = xd
+            i += 1
 
-        return cost, xx, uu
+        return np.inf if i != horizon else cost
             
 
 
@@ -267,8 +270,10 @@ class iLQR:
         for i in range(100):
             if self.enable_visualization:
                 xx_flat, uu_flat = self.flatten_trajectory(xx, uu)
-                self.visualize(xx, i)
+                #self.visualize(xx, i)
                 self.visualize(xx_flat, i)
+                self.visualize(xx, i)
+
 
             for j in range(30):
                 dd, KK = self.backward_pass(xx, uu, damping)
