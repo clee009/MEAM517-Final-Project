@@ -147,13 +147,10 @@ class iLQR:
 
         xtraj[0] = xx[0]
         for k in range(self.N-1):
-          delta_xk = xtraj[k] - xx[k]
-          du = KK[k] @ delta_xk + self.alpha * dd[k]
-          #du *= self.lr / np.linalg.norm(du)
-          #uk = uu[k] + KK[k] @ delta_xk + self.alpha * dd[k]
-          utraj[k] = np.clip(uu[k] + du, self.quad.input_min, self.quad.input_max)
-          #A, B = self.get_linearized_discrete_dynamics(xtraj[k], utraj[k])
-          xtraj[k+1] = self.dynamics(xtraj[k], utraj[k])
+            delta_xk = xtraj[k] - xx[k]
+            du = KK[k] @ delta_xk + self.alpha * dd[k]
+            utraj[k] = np.clip(uu[k] + du, self.quad.input_min, self.quad.input_max)
+            xtraj[k+1] = self.dynamics(xtraj[k], utraj[k])
           
 
         # TODO: compute forward pass
