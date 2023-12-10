@@ -62,6 +62,44 @@ class SignedDistanceField(Obstacles):
         sdf = self.calc_sdf(x)
         return ca.exp(-self.gamma * sdf)
 
+def get_nonlinear_dynamics(q, qd, params):
+        
+    mb, lb, m1, l1, g = params['mb'], params['lb'], params['m1'], params['l1'], params['g']
+
+    Ib = 1/3*mb*lb**2
+    I1 = 1/3*m1*l1**2
+
+    M = ca.MX.zeros(4, 4)
+    C = ca.MX.zeros(4, 4)
+    tauG = ca.MX.zeros(4, 1)
+    B = ca.MX.zeros(4, 2)
+
+    M = np.array(
+        [[mb + m1, 0., 0., m1*l1*ca.cos(q[3])],
+            [0., mb + m1, 0., m1*l1*ca.sin(q[3])],
+            [0., 0., Ib, 0.],
+            [m1*l1*ca.cos(q[3]), m1*l1*ca.sin(q[3]), 0., I1 + m1*l1**2]])
+
+    C = np.array(
+        [[0., 0., 0., -m1*l1*ca.sin(q[3])*qd[3]],
+            [0., 0., 0., m1*l1*ca.cos(q[3])*qd[3]],
+            [0., 0., 0., 0.],
+            [0., 0., 0., 0.]])
+
+    tauG = np.array(
+        [[0.],
+            [-(m1+mb)*g],
+            [0.],
+            [-m1*l1*g*ca.sin(q[3])]])
+
+    B = np.array(
+        [[-ca.sin(q[2]), -ca.sin(q[2])],
+            [ca.cos(q[2]), ca.cos(q[2])],
+            [-lb, lb],
+            [0., 0.]])
+
+    return (M, C, tauG, B)
+
 def get_linearized_dynamics(x_f, u_f, params):
     """
     """
@@ -186,7 +224,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     for k in range(N-1):
         uk = U[k, :]
         for i in range(2):
-            opti.subject_to(opti.bounded(input_min, uk[0, i], input_max))
+            opti.subject_to(opti.bounded(input_min - u_f, uk[0, i], input_max - u_f))
 
     # Add boundary constraints
     xmin, ymin, xmax, ymax = boundary
