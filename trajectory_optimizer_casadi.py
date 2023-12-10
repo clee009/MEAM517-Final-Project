@@ -49,11 +49,13 @@ class SignedDistanceField(Obstacles):
         )
 
     def calc_sdf(self, x):
-        min_sdf = -self.calc_sdf_single(x, 0)
-        for i in range(1, self.n):
-            min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
+        # min_sdf = -self.calc_sdf_single(x, 0)
+        # for i in range(1, self.n):
+        #     min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
         
-        return min_sdf
+        # return min_sdf
+
+        return self.calc_sdf_single(x, 0)
 
 
     def barrier_func(self, x):
