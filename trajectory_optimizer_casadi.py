@@ -145,42 +145,43 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     xmin, ymin, xmax, ymax = box
     print("box =", box)
     # Define the margins around the box where the quadrotor should not enter
-    # margin = 0  # Distance margin
-    # for k in range(N):
-    #     # Extract the position of the quadrotor at step k
-    #     xk = X[k, 0]
-    #     yk = X[k, 1]
+    margin = 0  # Distance margin
+    for k in range(N):
+        # Extract the position of the quadrotor at step k
+        xk = X[k, 0]
+        yk = X[k, 1]
 
-    #     # Define the obstacle box with margin
-    #     xmin_margin = xmin - margin
-    #     ymin_margin = ymin - margin
-    #     xmax_margin = xmax + margin
+        # Define the obstacle box with margin
+        xmin_margin = xmin - margin
+        ymin_margin = ymin - margin
+        xmax_margin = xmax + margin
 
-    #     # Constraints to keep the quadrotor outside the margin around the box
-    #     outside_left = xk < xmin_margin
-    #     outside_right = xk > xmax_margin
-    #     outside_bottom = yk < ymin_margin
+        # Constraints to keep the quadrotor outside the margin around the box
+        outside_left = xk < xmin_margin
+        outside_right = xk > xmax_margin
+        outside_bottom = yk < ymin_margin
 
-    #     # The quadrotor must be outside the margin around the top box
-    #     opti.subject_to(outside_left + outside_right + outside_bottom >= 1)
+        # The quadrotor must be outside the margin around the top box
+        opti.subject_to(outside_left + outside_right + outside_bottom >= 1)
 
     # Obstacle penalty constraint
-    penalty = 0
-    for k in range(N):
-        xk, yk = X[k, 0], X[k, 1]
-        # Check if inside the box
-        inside_x_bounds = (xk > xmin) * (xk < xmax)
-        inside_y_bounds = (yk > ymin) * (yk < ymax)
-        inside_box = inside_x_bounds * inside_y_bounds
+    # penalty = 0
+    # for k in range(N):
+    #     xk, yk = X[k, 0], X[k, 1]
+    #     # Check if inside the box
+    #     inside_x_bounds = (xk > xmin) * (xk < xmax)
+    #     inside_y_bounds = (yk > ymin) * (yk < ymax)
+    #     inside_box = inside_x_bounds * inside_y_bounds
 
-        penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
+    #     penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
     # Cost function on input
     cost = 0
     for k in range(N-1):
         cost += ca.sumsqr(U[k, :])
 
-    opti.minimize(cost + alpha * penalty)
+    opti.minimize(cost)
+    # opti.minimize(cost + alpha * penalty)
 
     # Solve the optimization problem
     opti.solver("ipopt")
