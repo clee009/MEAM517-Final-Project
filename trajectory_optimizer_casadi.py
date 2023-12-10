@@ -104,12 +104,13 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
 
     # Add dynamics constraints
     A, B = discrete_time_linearized_dynamics(dt, x_f, u_f, params)
+    print('B shape =', B)
     for k in range(N-1):
         xk = X[k, :]
         xk_next = X[k+1, :]
         uk = U[k, :]
-        xk_collocation = ca.mtimes(A, (xk - x_f)) + ca.mtimes(B, uk) + x_f
-        opti.subject_to(xk_next == xk_collocation)
+        xk_collocation = ca.mtimes(A, (xk - x_f).reshape(8, 1)) + ca.mtimes(B, uk.reshape(2, 1)) + x_f.reshape(8, 1)
+        opti.subject_to(xk_next == xk_collocation.reshape(1, 8))
 
     # Add input constraints
     input_max = params['input_max']
