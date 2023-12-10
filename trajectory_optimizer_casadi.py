@@ -121,10 +121,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
     for k in range(N-1):
         uk = U[k, :]
         for i in range(2):
-            opti.subject_to(opti.bounded(input_min, uk[i], input_max))
+            opti.subject_to(opti.bounded(input_min, uk[0, i], input_max))
 
     # Add boundary constraints
     boundary = obstacles[0]
+    xmin, ymin, xmax, ymax = boundary
 
     for k in range(N):
         # Extract the position state at timestep k
