@@ -140,27 +140,28 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
-    # box = boxes[1]
-    # xmin, ymin, xmax, ymax = box
-    # # Define the margins around the box where the quadrotor should not enter
-    # margin = 0  # Distance margin
-    # for k in range(N):
-    #     # Extract the position of the quadrotor at step k
-    #     xk = X[k, 0]
-    #     yk = X[k, 1]
+    box = boxes[1]
+    xmin, ymin, xmax, ymax = box
+    print("box =", box)
+    # Define the margins around the box where the quadrotor should not enter
+    margin = 0  # Distance margin
+    for k in range(N):
+        # Extract the position of the quadrotor at step k
+        xk = X[k, 0]
+        yk = X[k, 1]
 
-    #     # Define the obstacle box with margin
-    #     xmin_margin = xmin - margin
-    #     ymin_margin = ymin - margin
-    #     xmax_margin = xmax + margin
+        # Define the obstacle box with margin
+        xmin_margin = xmin - margin
+        ymin_margin = ymin - margin
+        xmax_margin = xmax + margin
 
-    #     # Constraints to keep the quadrotor outside the margin around the box
-    #     outside_left = xk < xmin_margin
-    #     outside_right = xk > xmax_margin
-    #     outside_bottom = yk < ymin_margin
+        # Constraints to keep the quadrotor outside the margin around the box
+        outside_left = xk < xmin_margin
+        outside_right = xk > xmax_margin
+        outside_bottom = yk < ymin_margin
 
-    #     # The quadrotor must be outside the margin around the top box
-    #     opti.subject_to(outside_left + outside_right + outside_bottom >= 1)
+        # The quadrotor must be outside the margin around the top box
+        opti.subject_to(outside_left + outside_right + outside_bottom >= 1)
 
     # Cost function on input
     cost = 0
