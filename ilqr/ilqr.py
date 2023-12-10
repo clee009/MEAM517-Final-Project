@@ -24,6 +24,7 @@ class iLQR:
         self.uf = rrt.quad.u_f
         self.xf = rrt.xf
         self.dt = rrt.dt
+        self.eps = rrt.epsilon
         
 
     def total_cost(self, xx, uu):
@@ -194,11 +195,59 @@ class iLQR:
             cost = self.running_cost(xk, uk, xd)
             dp.append(dp[-1] + cost)
 
-        policy = list(range(len(xx)))
+        policy = [(-1, [], [])]
+        for i, (xk, uk, xd) in enumerate(zip(xx, uu, xx[1:])):
+            policy.append((i, [xk, xd], [uk]))
+
         for i in tqdm(range(len(xx))):
-            for j in range(i+1, len(xx)):
-                xf = xx[j]
-                cost = 0
+            for j in range(i+1, min(len(xx), i+6)):
+                max_cost = dp[j]-dp[i]
+                cost, xx_tmp, uu_tmp = self.calc_lqr_cost_to_go(xx[i], xx[j], max_cost)
+                if not xx_tmp:
+                    break
+
+                if cost < max_cost:
+                    dp[j] = dp[i] + cost
+                    policy[j] = i, xx_tmp, uu_tmp
+                    
+        way_points = [len(uu)]
+        while way_points[-1] != 0:
+            idx, _, _ = policy[way_points[-1]]
+            way_points.append(idx)
+
+        
+        print(way_points)
+        xx_new, uu_new = [xx[0]], []
+        for i in way_points[::-1]:
+            _, xx_tmp, uu_tmp = policy[i]
+            uu_new += uu_tmp
+            xx_new += xx_tmp[1:]
+        
+        print("pruned-size:", len(uu_new), "\toriginal:", len(uu))
+        return xx_new, uu_new
+
+    
+    def calc_lqr_cost_to_go(self, x0, xf, max_cost):
+        xx = [np.copy(x0)]
+        uu = []
+
+        cost = 0
+        while not (np.abs(xx[-1] - xf) <= self.eps).all():
+            uk = self.quad.compute_lqr_feedback(xx[-1], x_goal=xf)
+            uk = np.clip(uk, self.quad.input_min, self.quad.input_max)
+            xd = self.dynamics(xx[-1], uk)
+            if not self.sdf.is_state_feasible(xd):
+                return np.inf, [], []
+                
+            cost += self.running_cost(xx[-1], uk, xd)
+            if cost >= max_cost:
+                return np.inf, [], []
+
+            xx.append(xd)
+            uu.append(uk)
+
+        return cost, xx, uu
+            
 
 
     def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
@@ -217,11 +266,14 @@ class iLQR:
         damping = 1e5
         for i in range(100):
             if self.enable_visualization:
+                xx_flat, uu_flat = self.flatten_trajectory(xx, uu)
                 self.visualize(xx, i)
+                self.visualize(xx_flat, i)
 
             for j in range(30):
                 dd, KK = self.backward_pass(xx, uu, damping)
                 xx_temp, uu_temp = self.forward_pass(xx, uu, dd, KK)
+                #xx_flat, uu_flat = self.flatten_trajectory(xx, uu)
                 feasible = all(self.sdf.is_state_feasible(x) for x in xx_temp)
                 J_temp = self.total_cost(xx_temp, uu_temp)
                 if False and J_temp >= J:
