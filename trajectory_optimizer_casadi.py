@@ -49,7 +49,7 @@ def get_linearized_dynamics(x_f, u_f, params):
     return A, B
 
 def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
-    A_c, B_c = get_linearized_dynamics(x_f, u_f, params)
+    A_c, B_c = get_linearized_dynamics(x_f.reshape(-1), u_f.reshape(-1), params)
 
     # Identity matrix in CasADi
     I = ca.MX.eye(8)
