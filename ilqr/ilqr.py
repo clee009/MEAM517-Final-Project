@@ -23,6 +23,7 @@ class iLQR:
         self.quad = rrt.quad
         self.uf = rrt.quad.u_f
         self.xf = rrt.xf
+        self.dt = rrt.dt
         
 
     def total_cost(self, xx, uu):
@@ -154,20 +155,6 @@ class iLQR:
         # TODO: compute backward pass
 
         return dd, KK
-    
-
-    def visualize_trajectory(self, xx, i):
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = fig.add_subplot()
-
-        self.sdf.plot_obs(ax)
-        xx = np.array([xk[:2] for xk in xx])
-
-        ax.plot(xx[:,0], xx[:,1], '--', label='actual trajectory')
-        ax.axis('equal')
-        ax.set_title("iter: " + str(i))
-        plt.show()
 
 
     def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
@@ -182,33 +169,22 @@ class iLQR:
 
         Jprev = np.inf
         Jnext = self.total_cost(xx, uu_guess)
-        print(Jnext)
+        #print(Jnext)
         uu = uu_guess
         KK = None
 
         i = 0
-        print(f'cost: {Jnext}')
-
-        infeasible_k = -1
         while np.abs(Jprev - Jnext) > 1e-3 and i < 100:
-            if self.visualize:
-                self.visualize_trajectory(xx, i)
-
             dd, KK = self.backward_pass(xx, uu)
-            xx_new, uu_new = self.forward_pass(xx, uu, dd, KK)
-            for k, x in enumerate(xx_new):
+            xx, uu = self.forward_pass(xx, uu, dd, KK)
+            for idx, x in enumerate(xx):
                 if not self.sdf.is_state_feasible(x):
-                    infeasible_k = k
-                    break
-
-            if infeasible_k != -1:
-                break
-
-            xx, uu, = xx_new, uu_new
+                    return idx, None, None
+                
             Jprev = Jnext
             Jnext = self.total_cost(xx, uu)
             print(f'cost: {Jnext}')
             i += 1
 
-        print(f'Converged to cost {Jnext}')
-        return infeasible_k, xx, uu
+        #print(f'Converged to cost {Jnext}')
+        return -1, xx, uu
