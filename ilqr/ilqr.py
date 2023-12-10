@@ -75,7 +75,7 @@ class iLQR:
         grad[:8] = (xk - self.xf).T @ self.Q
         grad[8:] = (uk - self.uf).T @ self.R
 
-        return grad
+        return grad 
     
 
     def hess_running_cost(self, xk: np.ndarray, uk: np.ndarray) -> np.ndarray:
