@@ -1,4 +1,3 @@
 alpha: 1
 sdf_weight: 1
-lr: 0.01
 visualize: True

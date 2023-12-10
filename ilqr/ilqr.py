@@ -21,10 +21,8 @@ class iLQR:
 
         self.sdf = rrt.obs
         self.quad = rrt.quad
-
-        self.x0 = rrt.x0
-        self.xf = rrt.xf
         self.uf = rrt.quad.u_f
+        self.xf = rrt.xf
         
 
     def total_cost(self, xx, uu):
@@ -32,17 +30,12 @@ class iLQR:
         with torch.no_grad():
             for xk, uk in zip(xx, uu):
                 cost += self.running_cost(xk, uk)
-                cost += self.sdf_weight * self.sdf.barrier_func(xk).float()
+                #cost += self.sdf_weight * self.sdf.barrier_func(xk).float()
 
         return cost + self.terminal_cost(xx[-1])
     
 
     def get_linearized_discrete_dynamics(self, x: np.ndarray, u: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        :param x: state
-        :param u: input
-        :return: the discrete linearized dynamics matrices, A, B as a tuple
-        """
         A, B = self.quad.GetLinearizedDynamics(x, u)
         C = np.eye(A.shape[0])
         D = np.zeros((A.shape[0],))
@@ -51,12 +44,6 @@ class iLQR:
          
 
     def running_cost(self, xk: np.ndarray, uk: np.ndarray) -> float:
-        """
-        :param xk: state
-        :param uk: input
-        :return: l(xk, uk), the running cost incurred by xk, uk
-        """
-
         lqr_cost = 0.5 * ((xk - self.xf).T @ self.Q @ (xk - self.xf) +
                           (uk - self.quad.u_f).T @ self.R @ (uk - self.uf))
 
@@ -79,13 +66,6 @@ class iLQR:
     
 
     def hess_running_cost(self, xk: np.ndarray, uk: np.ndarray) -> np.ndarray:
-        """
-        :param xk: state
-        :param uk: input
-        :return: The hessian of the running cost
-        [[∂²l/∂x², ∂²l/∂x∂u],
-         [∂²l/∂u∂x, ∂²l/∂u²]], evaluated at xk, uk
-        """
         H = np.zeros((10, 10))
 
         # TODO: Compute the hessian
@@ -95,19 +75,10 @@ class iLQR:
         return H
 
     def terminal_cost(self, xf: np.ndarray) -> float:
-        """
-        :param xf: state
-        :return: Lf(xf), the running cost incurred by xf
-        """
         return 0.5 * (xf - self.xf).T @ self.Qf @ (xf - self.xf)
     
 
     def grad_terminal_cost(self, xf: np.ndarray) -> np.ndarray:
-        """
-        :param xf: final state
-        :return: ∂Lf/∂xf
-        """
-
         grad = np.zeros((8))
 
         # TODO: Compute the gradient
@@ -116,10 +87,6 @@ class iLQR:
     
         
     def hess_terminal_cost(self, xf: np.ndarray) -> np.ndarray:
-        """
-        :param xf: final state
-        :return: ∂²Lf/∂xf²
-        """ 
         return self.Qf
     
 
@@ -158,11 +125,6 @@ class iLQR:
     
 
     def backward_pass(self, xx, uu):
-        """
-        :param xx: state trajectory guess, should be length N
-        :param uu: input trajectory guess, should be length N-1
-        :return: KK and dd, the feedback and feedforward components of the iLQR update
-        """
         dd = [np.zeros((2,))] * (self.N - 1)
         KK = [np.zeros((2, 8))] * (self.N - 1)
         H_last = self.hess_terminal_cost(xx[-1])
@@ -170,13 +132,13 @@ class iLQR:
 
         for k in range(self.N-2,-1,-1):
             Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
-            Hb = hessian(self.sdf.barrier_func, torch.Tensor(xx[k]))
-            gb = jacobian(self.sdf.barrier_func, torch.Tensor(xx[k]))
+            #Hb = hessian(self.sdf.barrier_func, torch.Tensor(xx[k]))
+            #gb = jacobian(self.sdf.barrier_func, torch.Tensor(xx[k]))
 
             Hl = self.hess_running_cost(xx[k], uu[k])
             gl = self.grad_running_cost(xx[k], uu[k])
-            Hl[:8,:8] += self.sdf_weight * Hb.numpy()
-            gl[:8] += self.sdf_weight * gb.numpy()
+            #Hl[:8,:8] += self.sdf_weight * Hb.numpy()
+            #gl[:8] += self.sdf_weight * gb.numpy()
 
             Qx = gl[:8] + Ak.T @ g_last
             Qu = gl[8:] + Bk.T @ g_last
@@ -208,20 +170,13 @@ class iLQR:
         plt.show()
 
 
-    def calculate_optimal_trajectory(self, uu_guess, dt):
-
-        """
-        Calculate the optimal trajectory using iLQR from a given initial condition x,
-        with an initial input sequence guess uu
-        :param x: initial state
-        :param uu_guess: initial guess at input trajectory
-        :return: xx, uu, KK, the input and state trajectory and associated sequence of LQR gains
-        """
+    def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
+        self.xf = xf
         self.dt = dt
         self.N = len(uu_guess) + 1
 
         # Get an initial, dynamically consistent guess for xx by simulating the quadrotor
-        xx = [self.x0]
+        xx = [x0]
         for k in range(self.N-1):
             xx.append(self.dynamics(xx[k], uu_guess[k]))
 
@@ -233,16 +188,27 @@ class iLQR:
 
         i = 0
         print(f'cost: {Jnext}')
+
+        infeasible_k = -1
         while np.abs(Jprev - Jnext) > 1e-3 and i < 100:
             if self.visualize:
                 self.visualize_trajectory(xx, i)
 
             dd, KK = self.backward_pass(xx, uu)
-            xx, uu = self.forward_pass(xx, uu, dd, KK)
-            
+            xx_new, uu_new = self.forward_pass(xx, uu, dd, KK)
+            for k, x in enumerate(xx_new):
+                if not self.sdf.is_state_feasible(x):
+                    infeasible_k = k
+                    break
+
+            if infeasible_k != -1:
+                break
+
+            xx, uu, = xx_new, uu_new
             Jprev = Jnext
             Jnext = self.total_cost(xx, uu)
             print(f'cost: {Jnext}')
             i += 1
+
         print(f'Converged to cost {Jnext}')
-        return xx, uu, KK
+        return infeasible_k, xx, uu

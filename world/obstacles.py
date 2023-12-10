@@ -87,6 +87,20 @@ class Obstacles:
                     regions.append([x_min, y_min, x_max, y_max])
 
         return regions
+    
+
+    def is_state_feasible(self, state):
+        x, y = state[:2]
+        for i, (x_min, y_min, x_max, y_max) in enumerate(self.boxes):
+            inside = x_min < x < x_max and y_min < y < y_max
+            if i == 0:
+                if not inside:
+                    return False
+                
+            elif inside:
+                return False
+            
+        return True
 
 
     def is_feasible(self, points):
