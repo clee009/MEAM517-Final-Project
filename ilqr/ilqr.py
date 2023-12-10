@@ -26,7 +26,7 @@ class iLQR:
         
 
     def total_cost(self, xx, uu):
-        cost = sum(self.running_cost(xk, uk) for xk, uk in zip(xx, uu))
+        cost = sum(self.running_cost(*args) for args in zip(xx, uu, xx[1:]))
         return cost + self.terminal_cost(xx[-1])
     
 
@@ -42,14 +42,14 @@ class iLQR:
         return self.q1 * np.exp(self.q2 * self.sdf.calc_sdf(xk))
          
 
-    def running_cost(self, xk: np.ndarray, uk: np.ndarray) -> float:
-        x_cost = (xk - self.xf).T @ self.Q @ (xk - self.xf)
+    def running_cost(self, xk, uk, xd) -> float:
+        x_cost = (xk - xd).T @ self.Q @ (xk - xd)
         u_cost = (uk - self.uf).T @ self.R @ (uk - self.uf)
         b_cost = self.calc_barrier_cost(xk)
         return 0.5 * (x_cost + u_cost) + b_cost
     
 
-    def grad_running_cost(self, xk: np.ndarray, uk: np.ndarray) -> np.ndarray:
+    def grad_running_cost(self, xk, uk, xd) -> np.ndarray:
         """
         :param xk: state
         :param uk: input
@@ -58,7 +58,7 @@ class iLQR:
         grad = np.zeros((10,))
 
         #TODO: Compute the gradient
-        grad[:8] = (xk - self.xf).T @ self.Q
+        grad[:8] = (xk - xd).T @ self.Q
         grad[8:] = (uk - self.uf).T @ self.R
 
         c = self.q2 * self.calc_barrier_cost(xk)
@@ -140,7 +140,7 @@ class iLQR:
         for k in range(self.N-2,-1,-1):
             Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
             Hl = self.hess_running_cost(xx[k], uu[k])
-            gl = self.grad_running_cost(xx[k], uu[k])
+            gl = self.grad_running_cost(xx[k], uu[k], xx[k+1])
             
             Qx = gl[:8] + Ak.T @ g_last
             Qu = gl[8:] + Bk.T @ g_last
@@ -190,16 +190,17 @@ class iLQR:
         uu = uu_guess
 
         damping = 1e5
+        from tqdm import tqdm
         for i in range(100):
             if self.enable_visualization:
                 self.visualize(xx, i)
 
-            for j in range(30):
+            for j in tqdm(range(30)):
                 dd, KK = self.backward_pass(xx, uu, damping)
                 xx_temp, uu_temp = self.forward_pass(xx, uu, dd, KK)
                 feasible = all(self.sdf.is_state_feasible(x) for x in xx_temp)
                 J_temp = self.total_cost(xx_temp, uu_temp)
-                if not feasible or J_temp >= J:
+                if False and J_temp >= J:
                     damping *= 4
                     damping = min(damping, 1e8)
                 else:
