@@ -1,5 +1,85 @@
 import casadi as ca
 import numpy as np
+from world import Obstacles
+import matplotlib.pyplot as plt
+
+class SignedDistanceField(Obstacles):
+    def __init__(self, file: str, gamma = 3.6):
+        super().__init__(file)
+        self.n = len(self.boxes)
+        self.gamma = gamma
+    
+
+    def calc_sdf_single(self, state, idx):
+        x = state[0, 0]
+        y = state[0, 1]
+        x_min, y_min, x_max, y_max = self.boxes[idx]
+
+        if x < x_min:
+            if y < y_min:
+                return ca.sqrt((x_min - x)**2 + (y_min - y)**2)  # Bottom-left corner
+            elif y > y_max:
+                return ca.sqrt((x_min - x)**2 + (y - y_max)**2)  # Top-left corner
+            else:
+                return x_min - x  # Left edge
+            
+        elif x > x_max:
+            if y < y_min:
+                return ca.sqrt((x - x_max)**2 + (y_min - y)**2)  # Bottom-right corner
+            elif y > y_max:
+                return ca.sqrt((x - x_max)**2 + (y - y_max)**2) # Top-right corner
+            else:
+                return x - x_max  # Right edge
+            
+        else:
+            if y < y_min:
+                return y_min - y  # Bottom edge
+            elif y > y_max:
+                return y - y_max  # Top edge
+            else:
+                dx = ca.fmax(x - x_max, x_min - x)
+                dy = ca.fmax(y - y_max, y_min - y)
+                return ca.fmax(dx, dy)
+
+    def calc_sdf(self, x):
+        min_sdf = -self.calc_sdf_single(x, 0)
+        for i in range(1, self.n):
+            min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
+        
+        return min_sdf
+    
+    
+    def plot_barrier(self):
+        x_min, y_min, x_max, y_max = self.boxes[0]
+
+        # Generate a grid of points
+        x_vals = np.linspace(x_min, x_max, int(10 * (x_max - x_min)))
+        y_vals = np.linspace(y_min, y_max, int(10 * (y_max - y_min)))
+        X, Y = np.meshgrid(x_vals, y_vals)
+
+        # Create a CasADi function for barrier_func
+        x_sym = ca.MX.sym('x', 2)
+        barrier_casadi = ca.Function('barrier', [x_sym], [self.barrier_func(x_sym)])
+
+        # Calculate the signed distance for each point in the grid
+        sdf_values = np.zeros(X.shape)
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                point = np.array([X[i, j], Y[i, j]])
+                sdf_values[i, j] = barrier_casadi(point).full().item()
+
+        # Plot the signed distance field
+        plt.imshow(sdf_values, extent=(x_min, x_max, y_min, y_max), cmap='jet', origin='lower')
+        plt.colorbar(label='Signed Distance')
+        plt.title('Signed Distance Field to Rectangle')
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.show()
+
+
+    def barrier_func(self, x):
+        sdf = self.calc_sdf(x)
+        return ca.exp(-self.gamma * sdf)
 
 def get_linearized_dynamics(x_f, u_f, params):
     """
@@ -128,21 +208,21 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
             opti.subject_to(opti.bounded(input_min, uk[0, i], input_max))
 
     # Add boundary constraints
-    xmin, ymin, xmax, ymax = boundary
+    # xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
-    for k in range(N):
-        # Extract the position state at timestep k
-        xk = X[k, 0]
-        yk = X[k, 1]
+    # for k in range(N):
+    #     # Extract the position state at timestep k
+    #     xk = X[k, 0]
+    #     yk = X[k, 1]
 
-        # Add boundary constraints
-        opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
-        opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+    #     # Add boundary constraints
+    #     opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
+    #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
     box = boxes[1]
-    xmin, ymin, xmax, ymax = box
+    # xmin, ymin, xmax, ymax = box
     print("box =", box)
     # Define the margins around the box where the quadrotor should not enter
     # margin = 0  # Distance margin
@@ -185,14 +265,21 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     #     barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
     #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
+    # Obstacle signed distance field
+    sdf = SignedDistanceField("./configs/world.yaml", gamma=1)
+    sdf.plot_barrier()
+    barrier = 0
+    for k in range(N):
+        barrier += sdf.barrier_func(X[k, :])
+
     # Cost function on input
     cost = 0
     for k in range(N-1):
         cost += ca.sumsqr(U[k, :])
 
-    opti.minimize(cost)
+    # opti.minimize(cost)
     # opti.minimize(cost + alpha * penalty)
-    # opti.minimize(cost + alpha * barrier)
+    opti.minimize(cost + alpha * barrier)
 
     # Solve the optimization problem
     opti.solver("ipopt")
