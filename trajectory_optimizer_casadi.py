@@ -19,7 +19,7 @@ class SignedDistanceField(Obstacles):
         top_left = ca.sqrt((x_min - x)**2 + (y - y_max)**2)
         bottom_right = ca.sqrt((x - x_max)**2 + (y_min - y)**2)
         top_right = ca.sqrt((x - x_max)**2 + (y - y_max)**2)
-        
+
         left_edge = x_min - x
         right_edge = x - x_max
         bottom_edge = y_min - y
@@ -245,9 +245,9 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
     # Obstacle signed distance field
-    sdf = SignedDistanceField("./configs/world.yaml", gamma=1)
+    sdf = SignedDistanceField("./configs/world.yaml", gamma=3)
     barrier = 0
-    for k in range(N):
+    for k in range(N-1):
         barrier += sdf.barrier_func(X[k, :])
 
     # Cost function on input
