@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import rc
-from obstacles import Obstacles
+from world import Obstacles
 from quadrotor_with_pendulum import QuadrotorPendulum
 
 
