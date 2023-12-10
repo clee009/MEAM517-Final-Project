@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.signal import cont2discrete
 from typing import List, Tuple
-import torch
-from torch.autograd.functional import hessian, jacobian
 from scipy.integrate import solve_ivp
 
 from lqrrt import PathPlannerLQRRT
+import matplotlib.pyplot as plt
 
 import configs
 
@@ -27,12 +26,7 @@ class iLQR:
         
 
     def total_cost(self, xx, uu):
-        cost = 0
-        with torch.no_grad():
-            for xk, uk in zip(xx, uu):
-                cost += self.running_cost(xk, uk)
-                #cost += self.sdf_weight * self.sdf.barrier_func(xk).float()
-
+        cost = sum(self.running_cost(xk, uk) for xk, uk in zip(xx, uu))
         return cost + self.terminal_cost(xx[-1])
     
 
@@ -42,13 +36,17 @@ class iLQR:
         D = np.zeros((A.shape[0],))
         [Ad, Bd, _, _, _] = cont2discrete((A, B, C, D), self.dt)
         return Ad, Bd
+    
+
+    def calc_barrier_cost(self, xk):
+        return self.q1 * np.exp(self.q2 * self.sdf.calc_sdf(xk))
          
 
     def running_cost(self, xk: np.ndarray, uk: np.ndarray) -> float:
-        lqr_cost = 0.5 * ((xk - self.xf).T @ self.Q @ (xk - self.xf) +
-                          (uk - self.quad.u_f).T @ self.R @ (uk - self.uf))
-
-        return lqr_cost
+        x_cost = (xk - self.xf).T @ self.Q @ (xk - self.xf)
+        u_cost = (uk - self.uf).T @ self.R @ (uk - self.uf)
+        b_cost = self.calc_barrier_cost(xk)
+        return 0.5 * (x_cost + u_cost) + b_cost
     
 
     def grad_running_cost(self, xk: np.ndarray, uk: np.ndarray) -> np.ndarray:
@@ -63,6 +61,9 @@ class iLQR:
         grad[:8] = (xk - self.xf).T @ self.Q
         grad[8:] = (uk - self.uf).T @ self.R
 
+        c = self.q2 * self.calc_barrier_cost(xk)
+        grad[:2] += c * self.sdf.calc_grad(xk)
+
         return grad 
     
 
@@ -73,7 +74,12 @@ class iLQR:
         H[:8,:8] = self.Q
         H[8:,8:] = self.R
 
+        c = self.q2**2 * self.calc_barrier_cost(xk)
+        grad = self.sdf.calc_grad(xk)
+        H[:2,:2] += c * grad @ grad.T
+
         return H
+    
 
     def terminal_cost(self, xf: np.ndarray) -> float:
         return 0.5 * (xf - self.xf).T @ self.Qf @ (xf - self.xf)
@@ -133,14 +139,9 @@ class iLQR:
 
         for k in range(self.N-2,-1,-1):
             Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
-            #Hb = hessian(self.sdf.barrier_func, torch.Tensor(xx[k]))
-            #gb = jacobian(self.sdf.barrier_func, torch.Tensor(xx[k]))
-
             Hl = self.hess_running_cost(xx[k], uu[k])
             gl = self.grad_running_cost(xx[k], uu[k])
-            #Hl[:8,:8] += self.sdf_weight * Hb.numpy()
-            #gl[:8] += self.sdf_weight * gb.numpy()
-
+            
             Qx = gl[:8] + Ak.T @ g_last
             Qu = gl[8:] + Bk.T @ g_last
             Qxx = Hl[:8,:8] + Ak.T @ H_last @ Ak
@@ -155,6 +156,20 @@ class iLQR:
         # TODO: compute backward pass
 
         return dd, KK
+    
+
+    def visualize(self, xx, i):
+        print(len(xx))
+
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        self.sdf.plot_obs(ax)
+        xx = np.array([xk[:2] for xk in xx])
+
+        ax.plot(xx[:,0], xx[:,1], '--', label='actual trajectory')
+        ax.axis('equal')
+        ax.set_title("iteration: %d" % i)
+        plt.show()
 
 
     def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
@@ -169,22 +184,22 @@ class iLQR:
 
         Jprev = np.inf
         Jnext = self.total_cost(xx, uu_guess)
-        #print(Jnext)
+        print(Jnext)
         uu = uu_guess
         KK = None
 
         i = 0
         while np.abs(Jprev - Jnext) > 1e-3 and i < 100:
+            if self.enable_visualization:
+                self.visualize(xx, i)
+
             dd, KK = self.backward_pass(xx, uu)
             xx, uu = self.forward_pass(xx, uu, dd, KK)
-            for idx, x in enumerate(xx):
-                if not self.sdf.is_state_feasible(x):
-                    return idx, None, None
-                
+
             Jprev = Jnext
             Jnext = self.total_cost(xx, uu)
             print(f'cost: {Jnext}')
             i += 1
 
-        #print(f'Converged to cost {Jnext}')
-        return -1, xx, uu
+        print(f'Converged to cost {Jnext}')
+        return xx, uu
