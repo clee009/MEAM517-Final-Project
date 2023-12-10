@@ -167,17 +167,21 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
     penalty = 0
     for k in range(N):
         xk, yk = X[k, 0], X[k, 1]
-        inside_box = ca.if_else(ca.logical_and(ca.logical_and(xk > xmin, xk < xmax), ca.logical_and(yk > ymin, yk < ymax)),
-                                1, 0)
+        # Check if inside the box
+        inside_x_bounds = (xk > xmin) * (xk < xmax)
+        inside_y_bounds = (yk > ymin) * (yk < ymax)
+        inside_box = inside_x_bounds * inside_y_bounds
+
         penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
+    alpha = 1
 
     # Cost function on input
     cost = 0
     for k in range(N-1):
         cost += ca.sumsqr(U[k, :])
 
-    opti.minimize(cost)
+    opti.minimize(cost + alpha * penalty)
 
     # Solve the optimization problem
     opti.solver("ipopt")
