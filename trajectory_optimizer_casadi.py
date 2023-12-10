@@ -220,36 +220,33 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
         xk_next = X[k+1, :]
         uk = U[k, :]
         xe = xk - x_f
-        # ue = uk - u_f
         xk_collocation = ca.mtimes(A, ca.reshape(xe, 8, 1)) + ca.mtimes(B, ca.reshape(uk, 2, 1)) + x_f.reshape(8, 1)
         opti.subject_to(xk_next == ca.reshape(xk_collocation, 1, 8))
 
     # Add input constraints
     input_max = params['input_max']
-    # input_max = input_max * np.ones((1, 2))
     input_min = params['input_min']
-    # input_min = input_min * np.ones((1, 2))
     for k in range(N-1):
         uk = U[k, :]
         for i in range(2):
             opti.subject_to(opti.bounded(input_min - u_f, uk[0, i], input_max - u_f))
 
     # Add boundary constraints
-    # xmin, ymin, xmax, ymax = boundary
+    xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
-    # for k in range(N):
-    #     # Extract the position state at timestep k
-    #     xk = X[k, 0]
-    #     yk = X[k, 1]
+    for k in range(N):
+        # Extract the position state at timestep k
+        xk = X[k, 0]
+        yk = X[k, 1]
 
-    #     # Add boundary constraints
-    #     opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
-    #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+        # Add boundary constraints
+        opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
+        opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
     box = boxes[0]
-    # xmin, ymin, xmax, ymax = box
+    xmin, ymin, xmax, ymax = box
     print("box =", box)
     # Define the margins around the box where the quadrotor should not enter
     # margin = 0  # Distance margin
@@ -272,7 +269,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     #     opti.subject_to(outside_left + outside_right + outside_bottom >= 1)
 
     # Obstacle penalty constraint
-    # penalty = 0
+    # barrier = 0
     # for k in range(N):
     #     xk, yk = X[k, 0], X[k, 1]
     #     # Check if inside the box
@@ -280,23 +277,23 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     #     inside_y_bounds = (yk > ymin) * (yk < ymax)
     #     inside_box = inside_x_bounds * inside_y_bounds
 
-    #     penalty += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
+    #     barrier += inside_box * ((xk - xmin)**2 + (xk - xmax)**2 + (yk - ymin)**2 + (yk - ymax)**2)
 
     # Obstacle barrier function constraint
-    # epsilon = 1e-3  # Small offset to prevent the log from blowing up
-    # barrier = 0
-    # for k in range(N):
-    #     xk, yk = X[k, 0], X[k, 1]
-    #     barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
-    #     barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
-    #     barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
-    #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
+    epsilon = 1e-3  # Small offset to prevent the log from blowing up
+    barrier = 0
+    for k in range(N):
+        xk, yk = X[k, 0], X[k, 1]
+        barrier += -ca.log(xk - xmin + epsilon)  # Barrier for left edge
+        barrier += -ca.log(xmax - xk + epsilon)  # Barrier for right edge
+        barrier += -ca.log(yk - ymin + epsilon)  # Barrier for bottom edge
+        barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
     # Obstacle signed distance field
-    sdf = SignedDistanceField("./configs/world.yaml", gamma)
-    barrier = 0
-    for k in range(N-1):
-        barrier += sdf.barrier_func(X[k, :])
+    # sdf = SignedDistanceField("./configs/world.yaml", gamma)
+    # barrier = 0
+    # for k in range(N-1):
+    #     barrier += sdf.barrier_func(X[k, :])
 
     # Cost function on input
     cost = 0
