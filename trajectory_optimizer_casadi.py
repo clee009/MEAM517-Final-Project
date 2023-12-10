@@ -60,7 +60,7 @@ class SignedDistanceField(Obstacles):
 
     def barrier_func(self, x):
         sdf = self.calc_sdf(x)
-        return ca.if_else(sdf > 0, 0, ca.exp(-self.gamma * sdf)) 
+        return ca.if_else(sdf < 0, ca.exp(-self.gamma * sdf), 0) 
 
 def get_nonlinear_dynamics(q, qd, params):
         
