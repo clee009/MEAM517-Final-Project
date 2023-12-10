@@ -60,7 +60,7 @@ class SignedDistanceField(Obstacles):
 
     def barrier_func(self, x):
         sdf = self.calc_sdf(x)
-        return ca.exp(-self.gamma * sdf)
+        return ca.if_else(sdf > 0, 0, ca.exp(-self.gamma * sdf)) 
 
 def get_nonlinear_dynamics(q, qd, params):
         
@@ -159,7 +159,12 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
-def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, gamma):
+def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, gamma, 
+                        opt_params = {
+                            'max_iter': 3000,
+                            'acceptable_tol': 1e-6,
+                            'acceptable_constr_viol_tol': 1e-2
+                        }):
     """
     """
     # Define parameters
@@ -300,7 +305,13 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     opti.minimize(cost + alpha * barrier)
 
     # Solve the optimization problem
-    opti.solver("ipopt")
+    opts = {
+        'ipopt.max_iter': opt_params['max_iter'],                # Maximum number of iterations
+        'ipopt.acceptable_tol': opt_params['acceptable_tol'],          # Acceptable convergence tolerance
+        'ipopt.acceptable_constr_viol_tol': opt_params['acceptable_constr_viol_tol']  # Acceptable constraint violation tolerance
+    }
+
+    opti.solver("ipopt", opts)
     try:
         sol = opti.solve()
 
