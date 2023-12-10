@@ -49,13 +49,13 @@ class SignedDistanceField(Obstacles):
         )
 
     def calc_sdf(self, x):
-        # min_sdf = -self.calc_sdf_single(x, 0)
-        # for i in range(1, self.n):
-        #     min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
+        min_sdf = -self.calc_sdf_single(x, 0)
+        for i in range(1, self.n):
+            min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
         
-        # return min_sdf
+        return min_sdf
 
-        return self.calc_sdf_single(x, 0)
+        # return self.calc_sdf_single(x, 0)
 
 
     def barrier_func(self, x):
@@ -227,17 +227,17 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
             opti.subject_to(opti.bounded(input_min - u_f, uk[0, i], input_max - u_f))
 
     # Add boundary constraints
-    xmin, ymin, xmax, ymax = boundary
+    # xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
-    for k in range(N):
-        # Extract the position state at timestep k
-        xk = X[k, 0]
-        yk = X[k, 1]
+    # for k in range(N):
+    #     # Extract the position state at timestep k
+    #     xk = X[k, 0]
+    #     yk = X[k, 1]
 
-        # Add boundary constraints
-        opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
-        opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+    #     # Add boundary constraints
+    #     opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
+    #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
     box = boxes[0]
