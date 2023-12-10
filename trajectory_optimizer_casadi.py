@@ -315,9 +315,6 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     
     except RuntimeError as e:
         print("Solver failed:", e)
-        # Evaluate and print the value of a decision variable or expression
-        print("Value of X:", opti.debug.value(X[N//2,:]))
-        print("Value of U:", opti.debug.value(U))
 
         success = False
         return opti.debug.value(X[N//2,:]), opti.debug.value(U), success
