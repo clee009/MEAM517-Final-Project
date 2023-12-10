@@ -189,17 +189,17 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
             opti.subject_to(opti.bounded(input_min, uk[0, i], input_max))
 
     # Add boundary constraints
-    # xmin, ymin, xmax, ymax = boundary
+    xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
-    # for k in range(N):
-    #     # Extract the position state at timestep k
-    #     xk = X[k, 0]
-    #     yk = X[k, 1]
+    for k in range(N):
+        # Extract the position state at timestep k
+        xk = X[k, 0]
+        yk = X[k, 1]
 
-    #     # Add boundary constraints
-    #     opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
-    #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+        # Add boundary constraints
+        opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
+        opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
     box = boxes[0]
