@@ -221,7 +221,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     #     opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
-    box = boxes[1]
+    box = boxes[0]
     # xmin, ymin, xmax, ymax = box
     print("box =", box)
     # Define the margins around the box where the quadrotor should not enter
