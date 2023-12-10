@@ -11,35 +11,42 @@ class SignedDistanceField(Obstacles):
     
 
     def calc_sdf_single(self, state, idx):
-        x = state[0, 0]
-        y = state[0, 1]
+        x, y = state[0, 0], state[0, 1]
         x_min, y_min, x_max, y_max = self.boxes[idx]
 
-        if x < x_min:
-            if y < y_min:
-                return ca.sqrt((x_min - x)**2 + (y_min - y)**2)  # Bottom-left corner
-            elif y > y_max:
-                return ca.sqrt((x_min - x)**2 + (y - y_max)**2)  # Top-left corner
-            else:
-                return x_min - x  # Left edge
-            
-        elif x > x_max:
-            if y < y_min:
-                return ca.sqrt((x - x_max)**2 + (y_min - y)**2)  # Bottom-right corner
-            elif y > y_max:
-                return ca.sqrt((x - x_max)**2 + (y - y_max)**2) # Top-right corner
-            else:
-                return x - x_max  # Right edge
-            
-        else:
-            if y < y_min:
-                return y_min - y  # Bottom edge
-            elif y > y_max:
-                return y - y_max  # Top edge
-            else:
-                dx = ca.fmax(x - x_max, x_min - x)
-                dy = ca.fmax(y - y_max, y_min - y)
-                return ca.fmax(dx, dy)
+        # Using ca.if_else for conditional logic
+        bottom_left = ca.sqrt((x_min - x)**2 + (y_min - y)**2)
+        top_left = ca.sqrt((x_min - x)**2 + (y - y_max)**2)
+        bottom_right = ca.sqrt((x - x_max)**2 + (y_min - y)**2)
+        top_right = ca.sqrt((x - x_max)**2 + (y - y_max)**2)
+        
+        left_edge = x_min - x
+        right_edge = x - x_max
+        bottom_edge = y_min - y
+        top_edge = y - y_max
+
+        dx = ca.fmax(x - x_max, x_min - x)
+        dy = ca.fmax(y - y_max, y_min - y)
+        center = ca.fmax(dx, dy)
+
+        return ca.if_else(
+            x < x_min,
+            ca.if_else(
+                y < y_min, bottom_left,
+                ca.if_else(y > y_max, top_left, left_edge)
+            ),
+            ca.if_else(
+                x > x_max,
+                ca.if_else(
+                    y < y_min, bottom_right,
+                    ca.if_else(y > y_max, top_right, right_edge)
+                ),
+                ca.if_else(
+                    y < y_min, bottom_edge,
+                    ca.if_else(y > y_max, top_edge, center)
+                )
+            )
+        )
 
     def calc_sdf(self, x):
         min_sdf = -self.calc_sdf_single(x, 0)
@@ -47,34 +54,6 @@ class SignedDistanceField(Obstacles):
             min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
         
         return min_sdf
-    
-    
-    def plot_barrier(self):
-        x_min, y_min, x_max, y_max = self.boxes[0]
-
-        # Generate a grid of points
-        x_vals = np.linspace(x_min, x_max, int(10 * (x_max - x_min)))
-        y_vals = np.linspace(y_min, y_max, int(10 * (y_max - y_min)))
-        X, Y = np.meshgrid(x_vals, y_vals)
-
-        # Create a CasADi function for barrier_func
-        x_sym = ca.MX.sym('x', 2)
-        barrier_casadi = ca.Function('barrier', [x_sym], [self.barrier_func(x_sym)])
-
-        # Calculate the signed distance for each point in the grid
-        sdf_values = np.zeros(X.shape)
-        for i in range(X.shape[0]):
-            for j in range(X.shape[1]):
-                point = np.array([X[i, j], Y[i, j]])
-                sdf_values[i, j] = barrier_casadi(point).full().item()
-
-        # Plot the signed distance field
-        plt.imshow(sdf_values, extent=(x_min, x_max, y_min, y_max), cmap='jet', origin='lower')
-        plt.colorbar(label='Signed Distance')
-        plt.title('Signed Distance Field to Rectangle')
-        plt.xlabel('X-axis')
-        plt.ylabel('Y-axis')
-        plt.show()
 
 
     def barrier_func(self, x):
@@ -267,7 +246,6 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
 
     # Obstacle signed distance field
     sdf = SignedDistanceField("./configs/world.yaml", gamma=1)
-    # sdf.plot_barrier()
     barrier = 0
     for k in range(N):
         barrier += sdf.barrier_func(X[k, :])
