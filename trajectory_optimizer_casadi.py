@@ -198,4 +198,4 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
         # Evaluate and print the value of a decision variable or expression
         print("Value of X:", opti.debug.value(X[N//2,:]))
         print("Value of U:", opti.debug.value(U))
-        return False, False
+        return -1, -1
