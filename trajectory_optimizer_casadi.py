@@ -49,7 +49,7 @@ class SignedDistanceField(Obstacles):
         )
 
     def calc_sdf(self, x):
-        min_sdf = -self.calc_sdf_single(x, 0)
+        min_sdf = self.calc_sdf_single(x, 0)
         for i in range(1, self.n):
             min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
         
@@ -59,8 +59,11 @@ class SignedDistanceField(Obstacles):
 
 
     def barrier_func(self, x):
+        epsilon = 1e-3
         sdf = self.calc_sdf(x)
-        return ca.exp(-self.gamma * sdf)
+        barrier_arg = sdf + epsilon
+        # return ca.exp(-self.gamma * sdf)
+        return -ca.log(self.gamma * barrier_arg)
 
 def get_nonlinear_dynamics(q, qd, params):
         
