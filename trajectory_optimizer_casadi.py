@@ -318,7 +318,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     for k in range(N-1):
         cost += ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :]) + alpha * ellipsoidal_function(X[k, :], box, lambda_param)
     
-    cost += ca.sumsqr(X[N, :] - x_f)
+    cost += ca.sumsqr(X[N-1, :] - x_f)
 
     opti.minimize(cost)
     # opti.minimize(cost + alpha * barrier)
