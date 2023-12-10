@@ -250,7 +250,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
             opti.subject_to(opti.bounded(input_min - u_f, uk[0, i], input_max - u_f))
 
     # Add boundary constraints
-    # xmin, ymin, xmax, ymax = boundary
+    xmin, ymin, xmax, ymax = boundary
     print("boundary =", boundary)
 
     for k in range(N):
