@@ -90,7 +90,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory):
     initial_state = initial_state_guess[0].reshape(1, 8)
     print('intial_state shape =', initial_state.shape)
     print('X[0] shape =', X[0, :].shape)
-    final_state = initial_state_guess[-1].reshape(1, 2)
+    final_state = initial_state_guess[-1].reshape(1, 8)
 
     # Set initial guesses
     opti.set_initial(X, initial_state_guess)
