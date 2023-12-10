@@ -119,7 +119,7 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
-def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
+def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, gamma):
     """
     """
     # Define parameters
@@ -245,7 +245,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha):
     #     barrier += -ca.log(ymax - yk + epsilon)  # Barrier for top edge
 
     # Obstacle signed distance field
-    sdf = SignedDistanceField("./configs/world.yaml", gamma=3)
+    sdf = SignedDistanceField("./configs/world.yaml", gamma)
     barrier = 0
     for k in range(N-1):
         barrier += sdf.barrier_func(X[k, :])
