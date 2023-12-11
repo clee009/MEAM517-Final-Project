@@ -68,7 +68,7 @@ class SignedDistanceField(Obstacles):
 def ellipsoidal_function(state, box, lambda_param):
     """
     """
-    x, y = state[0, 0], state[0, 1]
+    x, y = state[0][0], state[0][1]
 
     xmin, ymin, xmax, ymax = box
 
