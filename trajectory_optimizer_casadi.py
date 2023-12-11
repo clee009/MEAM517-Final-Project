@@ -228,7 +228,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     opti.subject_to(X[0, :] == initial_state)
 
     # Add final state constraint
-    opti.subject_to(X[N-1, :] == final_state)
+    # opti.subject_to(X[N-1, :] == final_state)
 
     # Add dynamics constraints
     A, B = discrete_time_linearized_dynamics(dt, x_f, u_f, params)
