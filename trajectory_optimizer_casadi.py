@@ -83,6 +83,24 @@ def ellipsoidal_function(state, box, lambda_param):
 
     return penalty
 
+def ellipsoidal_function_tips(state, box, lambda_param):
+    """
+    """
+    x, y = state[0], state[1]
+
+    xmin, ymin, xmax, ymax = box
+
+    # Define numerical values for the parameters
+    c_x = (xmin + xmax) / 2   # Numerical value for the center x
+    c_y = (ymin + ymax) / 2  # Numerical value for the center y
+    r_x = (xmax - xmin) / 2  # Numerical value for the size in x
+    r_y = (ymax - ymin) / 2  # Numerical value for the size in y
+
+    # Define the cost function directly using numerical values
+    penalty = 1 / (((x - c_x)**2 / r_x + (y - c_y)**2 / r_y)**lambda_param + 1)
+
+    return penalty
+
 
 
 def get_nonlinear_dynamics(q, qd, params):
@@ -359,9 +377,9 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
         cost += dist_param * ca.sumsqr(X[k, :2] - X[k+1, :2]) + ca.sumsqr(U[k, :]) + vel_param * ca.sumsqr(X[k, 3:])
         for box in boxes:
             xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
-            cost += barrier_param * ellipsoidal_function([[xr, yr]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function([[xl, yl]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function([[xm, ym]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function([xr, yr], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function([xl, yl], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function([xm, ym], box, lambda_param)
             # cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
