@@ -194,84 +194,7 @@ class iLQR:
         ax.axis('equal')
         ax.set_title("iteration: %d" % i)
         plt.show()
-
-
-    def backward_pass_flatten(self, xx, uu, xx_resamp):
-        dd = [np.zeros((2,))] * (self.N - 1)
-        KK = [np.zeros((2, 8))] * (self.N - 1)
-        H_last = self.hess_terminal_cost(xx[-1])
-        g_last = self.grad_terminal_cost(xx[-1])
-
-        for k in range(self.N-2,-1,-1):
-            Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
-            Hl = self.hess_running_cost(xx[k], uu[k])
-
-            dist = [np.linalg.norm(x - xx[k]) for x in xx_resamp]
-            xd = xx_resamp[np.argmin(dist)]
-            gl = self.grad_running_cost(xx[k], uu[k], xd)
-            
-            Qx = gl[:8] + Ak.T @ g_last
-            Qu = gl[8:] + Bk.T @ g_last
-            Qxx = Hl[:8,:8] + Ak.T @ H_last @ Ak
-            Quu = Hl[8:,8:] + Bk.T @ H_last @ Bk
-            Qux = Hl[8:,:8] + Bk.T @ H_last @ Ak
-
-            evals, evecs = np.linalg.eig(Quu)
-            evals = np.maximum(0, evals) + 1e-3
-            Quu = evecs @ np.diag(evals) @ evecs.T
-            
-            KK[k] = -np.linalg.solve(Quu, Qux)
-            dd[k] = -np.linalg.solve(Quu, Qu)
-            H_last = Qxx - KK[k].T @ Quu @ KK[k]
-            g_last = Qx  - KK[k].T @ Quu @ dd[k]
-
-        # TODO: compute backward pass
-
-        return dd, KK
-    
-    
-    def flatten_trajectory(self, xx, uu):
-        eps = self.flatten_steps * self.eps
-        xx_resamp = [np.copy(xx[0])]
-        for xk in xx:
-            if not (np.abs(xx_resamp[-1] - xk) <= eps).all():
-                xx_resamp.append(xk)
-
-        xx_resamp.append(xx[-1])
-
-        J = np.inf
-        for _ in range(self.flatten_iters):
-            dd, KK = self.backward_pass_flatten(xx, uu, xx_resamp)
-            xx, uu = self.forward_pass(xx, uu, dd, KK)
-            J_temp = self.total_cost(xx, uu)
-            if np.abs(J - J_temp) < 1e-3:
-                break
-
-            J = J_temp
-
-        print("down-length: ", len(xx_resamp))
-        return xx, uu
-
-    
-    def calc_lqr_cost(self, x0, xf, max_cost):
-        xk = np.copy(x0)
-
-        cost = 0
-        while not (np.abs(xk - xf) <= self.eps).all():
-            uk = self.quad.compute_lqr_feedback(xk, x_goal=xf)
-            uk = np.clip(uk, self.quad.input_min, self.quad.input_max)
-            xd = self.dynamics(xk, uk)
-            if not self.sdf.is_state_feasible(xd):
-                return np.inf
-                
-            cost += self.running_cost(xk, uk, xd)
-            if cost >= max_cost:
-                return np.inf
-
-            xk = xd
-
-        return cost
-            
+          
 
 
     def calculate_optimal_trajectory(self, x0, xf, uu_guess, dt):
@@ -287,7 +210,7 @@ class iLQR:
         J = self.total_cost(xx, uu_guess)
         uu = uu_guess
 
-        for i in range(100):
+        for i in range(self.max_iters):
             if self.enable_visualization:
                 self.visualize(xx, i)
                 
