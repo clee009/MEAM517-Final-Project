@@ -112,6 +112,22 @@ class PathPlannerLQRRT:
         return np.array(x_traj), u_traj
     
 
+    def interpolate_trajectory(self, planner: lqrrt.Planner, dt):
+        tt = np.arange(0, planner.T, dt)
+
+        # Preallocate results memory
+        xx = np.zeros((len(tt), 8))
+        uu = np.zeros((len(tt), 2))
+
+        # Interpolate plan
+        for i, t in enumerate(tt):
+            # Record this instant
+            xx[i, :] = planner.get_state(t)
+            uu[i, :] = planner.get_effort(t)
+        
+        return xx, uu
+    
+
     def xrand_gen(self, planner):
         while True:
             adj_ids = set() #find all adj

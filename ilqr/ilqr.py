@@ -234,4 +234,4 @@ class iLQR:
             print("[iter-{}]\tJ: {:.3f}".format(i, J))
 
         print(f'Converged to cost {J}')
-        return xx, uu
+        return np.array(xx), np.array(uu)

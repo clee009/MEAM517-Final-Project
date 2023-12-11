@@ -64,6 +64,20 @@ class Obstacles:
         sample_space[4:,1] = np.array(self.vel_span)
         sample_space[4:,0] = -sample_space[4:,1]
         return sample_space
+    
+
+    def plot_trajectories(self, trajs: dict):
+        fig = plt.figure(figsize=(8,6))
+
+        ax = plt.axes()
+        self.plot_obs(ax)
+
+        for label, xx in trajs.items():
+            ax.plot(xx[:,0], xx[:,1], '--', label=label)
+
+        ax.axis("equal")
+        plt.legend()
+        plt.show()
 
 
     def _convex_segmentation(self):
