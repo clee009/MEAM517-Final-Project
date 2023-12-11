@@ -83,6 +83,8 @@ def ellipsoidal_function(state, box, lambda_param):
 
     return penalty
 
+
+
 def get_nonlinear_dynamics(q, qd, params):
         
     mb, lb, m1, l1, g = params['mb'], params['lb'], params['m1'], params['l1'], params['g']
@@ -180,6 +182,38 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
+def get_ends(state, params):
+        """
+        Returns the positions of the ends of the quadrotor (tips of body and pendulum).
+
+        OUTPUTS:
+        end_pos - 6 element array, [xr, yr, xl, yl, xm, ym]
+        """
+
+        lb = params['lb']
+        l1 = params['l1']
+
+        xb = state[0, 0]
+        yb = state[0, 1]
+        thb = state[0, 2]
+        th1 = state[0, 3]
+
+        # Right tip of body/wing
+        xr = xb + lb / 2 * ca.cos(thb)
+        yr = yb + lb / 2 * ca.sin(thb)
+
+        # Left tip of body/wing
+        xl = xb - lb / 2 * ca.cos(thb)
+        yl = yb - lb / 2 * ca.sin(thb)
+
+        # Tip of pendulum
+        xm = xb + l1 * ca.sin(th1)
+        ym = yb - l1 * ca.cos(th1)
+
+        end_pos = [xr, yr, xl, yl, xm, ym]
+
+        return end_pos
+
 def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_params, 
                         opt_params = {
                             'max_iter': 3000,
@@ -216,8 +250,6 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     initial_state_guess = initial_trajectory['state']
     initial_control_guess = initial_trajectory['input']
     initial_state = initial_state_guess[0].reshape(1, 8)
-    print('intial_state shape =', initial_state.shape)
-    print('X[0] shape =', X[0, :].shape)
     final_state = initial_state_guess[-1].reshape(1, 8)
 
     # Set initial guesses
@@ -261,6 +293,8 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
         # Add boundary constraints
         opti.subject_to(opti.bounded(xmin, xk, xmax))  # x-coordinate must be within boundaries
         opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
+
+    # Add quadrotor constraint
 
     # Add top box obstacle constraints
     # box = boxes[0]
@@ -324,7 +358,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     for k in range(N-1):
         cost += dist_param * ca.sumsqr(X[k, :2] - X[k+1, :2]) + ca.sumsqr(U[k, :]) + vel_param * ca.sumsqr(X[k, 3:])
         for box in boxes:
-            cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
+            xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
+            cost += barrier_param * ellipsoidal_function([[xr, yr]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function([[xl, yl]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function([[xm, ym]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
 
