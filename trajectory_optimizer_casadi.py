@@ -228,7 +228,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     opti.subject_to(X[0, :] == initial_state)
 
     # Add final state constraint
-    # opti.subject_to(X[N-1, :] == final_state)
+    opti.subject_to(X[N-1, :] == final_state)
 
     # Add dynamics constraints
     A, B = discrete_time_linearized_dynamics(dt, x_f, u_f, params)
@@ -320,11 +320,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     # Cost function on input
     cost = 0
     for k in range(N-1):
-        cost += goal_param * ca.sumsqr(X[k, :] - final_state) + ca.sumsqr(U[k, :])
+        cost += goal_param * ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :])
         for box in boxes:
             cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
-    cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
+    cost += goal_param * ca.sumsqr(X[N-1, :] - x_f)
 
     opti.minimize(cost)
 
