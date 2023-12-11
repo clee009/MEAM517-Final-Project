@@ -3,5 +3,6 @@ q1: 30
 q2: -1.2 # must be neg!
 
 flatten_steps: 3
-flatten_iters: 60
-enable_visualization: True
+flatten_iters: 1
+flatten_period: 3
+enable_visualization: False

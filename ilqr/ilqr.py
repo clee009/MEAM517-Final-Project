@@ -145,7 +145,7 @@ class iLQR:
         return xtraj, utraj
     
 
-    def backward_pass(self, xx, uu, damping):
+    def backward_pass(self, xx, uu, xx_resamp=[], damping=0):
         dd = [np.zeros((2,))] * (self.N - 1)
         KK = [np.zeros((2, 8))] * (self.N - 1)
         H_last = self.hess_terminal_cost(xx[-1])
@@ -154,7 +154,13 @@ class iLQR:
         for k in range(self.N-2,-1,-1):
             Ak, Bk = self.get_linearized_discrete_dynamics(xx[k], uu[k])
             Hl = self.hess_running_cost(xx[k], uu[k])
-            gl = self.grad_running_cost(xx[k], uu[k], xx[k+1])
+
+            if not xx_resamp:
+                gl = self.grad_running_cost(xx[k], uu[k], xx[k+1])
+            else:
+                dist = [np.linalg.norm(x - xx[k]) for x in xx_resamp]
+                xd = xx_resamp[np.argmin(dist)]
+                gl = self.grad_running_cost(xx[k], uu[k], xd)
             
             Qx = gl[:8] + Ak.T @ g_last
             Qu = gl[8:] + Bk.T @ g_last
@@ -281,30 +287,28 @@ class iLQR:
         J = self.total_cost(xx, uu_guess)
         uu = uu_guess
 
-        damping = 1e5
         for i in range(100):
-            xx, uu = self.flatten_trajectory(xx, uu)
             if self.enable_visualization:
                 self.visualize(xx, i)
+                
+            xx_resamp = []
+            if i % self.flatten_period == 0: # flatten!
+                eps = self.flatten_steps * self.eps
+                xx_resamp.append(np.copy(xx[0]))
+                for xk in xx:
+                    if not (np.abs(xx_resamp[-1] - xk) <= eps).all():
+                        xx_resamp.append(xk)
 
+                xx_resamp.append(xf)
 
-            for j in range(30):
-                dd, KK = self.backward_pass(xx, uu, damping)
-                xx_temp, uu_temp = self.forward_pass(xx, uu, dd, KK)
-                #xx_flat, uu_flat = self.flatten_trajectory(xx, uu)
-                feasible = all(self.sdf.is_state_feasible(x) for x in xx_temp)
-                J_temp = self.total_cost(xx_temp, uu_temp)
-                if False and J_temp >= J:
-                    damping *= 4
-                    damping = min(damping, 1e8)
-                else:
-                    J = J_temp
-                    xx, uu = xx_temp, uu_temp
-                    damping /= 8
-                    damping = max(damping, 1e-4)
-                    break
+            dd, KK = self.backward_pass(xx, uu, xx_resamp)
+            xx, uu = self.forward_pass(xx, uu, dd, KK)
+            J_temp = self.total_cost(xx, uu)
+            if abs(J_temp-J) < 1e-3:
+                break
 
-            print("[iter-{}]\tJ: {:.3f}\tlambda: {:.3e}\tlm-iters:{}".format(i, J, damping, j))
+            J = J_temp
+            print("[iter-{}]\tJ: {:.3f}".format(i, J))
 
         print(f'Converged to cost {J}')
         return xx, uu
