@@ -180,7 +180,7 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
 
     return A_d, B_d
 
-def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, lambda_param, 
+def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_params, 
                         opt_params = {
                             'max_iter': 3000,
                             'acceptable_tol': 1e-6,
@@ -313,19 +313,20 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     # for k in range(N-1):
     #     barrier += sdf.barrier_func(X[k, :])
 
+    goal_param = tuning_params['goal_param']
+    barrier_param = tuning_params['barrier_param']
+    lambda_param = tuning_params['lambda_param']
+
     # Cost function on input
     cost = 0
     for k in range(N-1):
-        cost += ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :])
-        
-    for k in range(N-1):
+        cost += goal_param * ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :])
         for box in boxes:
-            cost += alpha * ellipsoidal_function(X[k, :], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += ca.sumsqr(X[N-1, :] - x_f)
 
     opti.minimize(cost)
-    # opti.minimize(cost + alpha * barrier)
 
     # Solve the optimization problem
     opts = {
