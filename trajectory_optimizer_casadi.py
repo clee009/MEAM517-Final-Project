@@ -263,9 +263,9 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
         opti.subject_to(opti.bounded(ymin, yk, ymax))  # y-coordinate must be within boundaries
 
     # Add top box obstacle constraints
-    box = boxes[0]
+    # box = boxes[0]
     # xmin, ymin, xmax, ymax = box
-    print("box =", box)
+    print("boxes =", boxes)
     # Define the margins around the box where the quadrotor should not enter
     # margin = 0  # Distance margin
     # for k in range(N):
@@ -316,7 +316,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, alpha, 
     # Cost function on input
     cost = 0
     for k in range(N-1):
-        cost += ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :]) + alpha * ellipsoidal_function(X[k, :], box, lambda_param)
+        cost += ca.sumsqr(X[k, :] - x_f) + ca.sumsqr(U[k, :])
+        
+    for k in range(N-1):
+        for box in boxes:
+            cost += alpha * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += ca.sumsqr(X[N-1, :] - x_f)
 
