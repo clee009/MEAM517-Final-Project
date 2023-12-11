@@ -354,11 +354,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     for k in range(N-1):
         cost += dist_param * ca.sumsqr(X[k, :2] - X[k+1, :2]) + ca.sumsqr(U[k, :]) + vel_param * ca.sumsqr(X[k, 3:])
         for box in boxes:
-            xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
-            cost += barrier_param * ellipsoidal_function([[xr, yr]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function([[xl, yl]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function([[xm, ym]], box, lambda_param)
-            # cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
+            # xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
+            # cost += barrier_param * ellipsoidal_function([[xr, yr]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function([[xl, yl]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function([[xm, ym]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
 
