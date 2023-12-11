@@ -76,7 +76,8 @@ class Obstacles:
             ax.plot(xx[:,0], xx[:,1], '--', label=label)
 
         ax.axis("equal")
-        plt.legend()
+        plt.legend(loc='upper right')
+        plt.savefig("./results/trajectories.svg")
         plt.show()
 
 
