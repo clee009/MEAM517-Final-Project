@@ -7,4 +7,4 @@ flatten_iters: 1
 flatten_period: 2
 
 max_iters: 200
-enable_visualization: True
+enable_visualization: False
