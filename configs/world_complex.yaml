@@ -1,6 +1,6 @@
 #x_min, y_min, x_max, y_max
-boxes: [
-    [0, 0, 8, 4],
+boundary: [0, 0, 8, 4]
+obstacles: [
     [3, 0, 5, 1.9], 
     [3, 2.1, 5, 4],
     [1, 2, 2, 2.5],
