@@ -24,7 +24,7 @@ from pydrake.all import VectorSystem, MonomialBasis, OddDegreeMonomialBasis, Var
 # link (m1 centered at l1).
 class QuadrotorPendulum(VectorSystem):
     def __init__(self, Q, R, Qf, x_f, mb = 1., 
-                        lb = 0.2, m1 = 2., l1 = 0.2,
+                        lb = 0.3, m1 = 2., l1 = 0.5,
                         g = 10., input_max = 30.):
         VectorSystem.__init__(self,
             2,                           # Two input (thrust of each rotor).
