@@ -49,6 +49,21 @@ class SignedDistanceField(Obstacles):
         return min_sdf
     
 
+    def calc_ellips(self, state, box, lambda_param):
+        x, y = state[0, 0], state[0, 1]
+
+        xmin, ymin, xmax, ymax = box
+
+        # Define numerical values for the parameters
+        c_x = (xmin + xmax) / 2   # Numerical value for the center x
+        c_y = (ymin + ymax) / 2  # Numerical value for the center y
+        r_x = (xmax - xmin) / 2  # Numerical value for the size in x
+        r_y = (ymax - ymin) / 2  # Numerical value for the size in y
+
+        # Define the cost function directly using numerical values
+        penalty = 1 / (((x - c_x)**2 / r_x + (y - c_y)**2 / r_y)**lambda_param + 1)
+    
+
     def calc_grad(self, x: np.ndarray):
         grad = np.zeros((2,))
         for i in range(2):

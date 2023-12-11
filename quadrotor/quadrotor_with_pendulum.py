@@ -97,16 +97,16 @@ class QuadrotorPendulum(VectorSystem):
         th1 = x[3]
 
         # Right tip of body/wing
-        xr = xb + self.lb / 2 * cos(thb)
-        yr = yb + self.lb / 2 * sin(thb)
+        xr = xb + (self.lb / 2) * cos(thb)
+        yr = yb + (self.lb / 2) * sin(thb)
 
         # Left tip of body/wing
-        xl = xb - self.lb / 2 * cos(thb)
-        yl = yb - self.lb / 2 * sin(thb)
+        xl = xb - (self.lb / 2) * cos(thb)
+        yl = yb - (self.lb / 2) * sin(thb)
 
         # Tip of pendulum
-        xm = xb + self.l1 * sin(th1)
-        ym = yb - self.l1 * cos(th1)
+        xm = (xb + self.l1) * sin(th1)
+        ym = (yb - self.l1) * cos(th1)
 
         end_pos = np.array([[xr, yr], [xl, yl], [xm, ym]])
 
