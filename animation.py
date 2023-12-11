@@ -4,9 +4,12 @@ import matplotlib.animation as animation
 from matplotlib import rc
 from world import Obstacles
 from quadrotor import QuadrotorPendulum
+import os
 
 
 class Animation:
+    RRT=0
+    ILQR=1
     def __init__(self, quad: QuadrotorPendulum, obs: Obstacles, num_frames = 60):
         self.obs = obs
         self.traj = np.zeros((1,8))
@@ -37,7 +40,7 @@ class Animation:
         return lines
 
 
-    def animate(self):
+    def animate(self, title=""):
         rc('animation', html='jshtml')
 
         fig = plt.figure(figsize=(8,6))
@@ -66,9 +69,29 @@ class Animation:
             ax.set_ylabel('z (m)')
             ax.set_aspect('equal')
             ax.legend(loc='upper left')
+            if title:
+                ax.set_title(title)
 
             return lines
         
         anim = animation.FuncAnimation(fig, frame, frames=self.num_frames, blit=False, repeat=False)
         plt.close()
         return anim
+    
+
+def create_animation(suffix: str, mode = Animation.RRT):
+    R = np.eye(2)
+    Q = np.diag([10, 10, 1, 1, 1, 1, 1, 1])
+    Qf = Q
+
+    # End time of the simulation
+    xf = np.array([6, 3, 0, 0, 0, 0, 0, 0])
+    quad = QuadrotorPendulum(Q, R, Qf, xf, input_max=30)
+    obs = Obstacles("./configs/world%s.yaml" % suffix)
+
+    file = "./initial_guesses" if mode == Animation.RRT else "./results"
+    file = os.path.join(file, "x%s.npy" % suffix)
+
+    anime = Animation(quad, obs)
+    anime.set_trajectory(np.load(file))
+    return anime

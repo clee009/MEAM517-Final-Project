@@ -6,5 +6,5 @@ flatten_steps: 3
 flatten_iters: 1
 flatten_period: 2
 
-max_iters: 200
+max_iters: 60
 enable_visualization: False
