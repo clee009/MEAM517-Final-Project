@@ -11,5 +11,3 @@ boxes: [
     [5, 3.5, 6, 4],  # narrow passage to the goal
     [5, 2.1, 6, 2.5],
 ]
-
-epsilon: 0.025
