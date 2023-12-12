@@ -183,7 +183,7 @@ class Obstacles:
             else:
                 w = x_max - x_min
                 h = y_max - y_min
-                line = ax.add_patch(Rectangle((x_min, y_min), w, h, alpha = i / len(boxes)))
+                line = ax.add_patch(Rectangle((x_min, y_min), w, h))
                 lines.append(line)
 
         return lines

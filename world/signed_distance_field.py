@@ -77,7 +77,7 @@ class SignedDistanceField(Obstacles):
         return grad
     
     
-    def plot_barrier(self):
+    def plot_barrier(self, shrink = 0.7):
         x_min, y_min, x_max, y_max = self.boxes[0]
 
         # Generate a grid of points
@@ -86,14 +86,45 @@ class SignedDistanceField(Obstacles):
         X, Y = np.meshgrid(x_vals, y_vals)
 
         # Calculate the signed distance for each point in the grid
-        sdf_values = np.vectorize(lambda x, y: self.barrier_func([x, y]))(X, Y)
+        sdf_values = np.vectorize(lambda x, y: self.calc_sdf([x, y]))(X, Y)
 
-        # Plot the signed distance field
+        # Create a 2x2 subplot grid
+        plt.figure(figsize=(12, 6))
+
+        # Plot the SDF heatmap
+        plt.subplot(2, 2, 1)
         plt.imshow(sdf_values, cmap='jet')
-        plt.colorbar(label='Signed Distance')
-        plt.title('Signed Distance Field to Rectangle')
+        plt.colorbar(shrink=shrink)
+        plt.title('SDF')
         plt.xlabel('X-axis')
         plt.ylabel('Y-axis')
+
+        # Plot the exp(-sdf) heatmap
+        plt.subplot(2, 2, 2)
+        plt.imshow(np.exp(-sdf_values), cmap='jet')
+        plt.colorbar(shrink=shrink)
+        plt.title('Exponential SDF')
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+
+        # Plot the sdf^2 heatmap
+        plt.subplot(2, 2, 3)
+        plt.imshow(np.minimum(0, sdf_values)**2, cmap='jet')
+        plt.colorbar(shrink=shrink)
+        plt.title('Negative-squared SDF')
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+
+        # Leave the last subplot blank
+        ax = plt.subplot(2, 2, 4)
+        self.plot_obs(ax)
+        ax.set_title("obstacles")
+        plt.axis('off')
+
+        # Adjust layout for better spacing
+        plt.tight_layout()
+        plt.savefig('./results/sdf.svg')
+
         plt.show()
 
 
