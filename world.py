@@ -64,8 +64,7 @@ class Obstacles:
                 # Update the minimum distance to any obstacle
                 min_distance = min(min_distance, distance_to_box)
 
-        # Define a threshold distance under which we consider the point to be too close
-        safety_threshold = 0.05  # This can be adjusted based on the specific requirements
+        safety_threshold = 0.05
 
         # Feasibility measure: distance minus the threshold
         # Positive when safely away from obstacles, negative when too close or inside an obstacle

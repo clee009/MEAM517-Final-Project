@@ -101,6 +101,7 @@ def ellipsoidal_function_tips(state, box, lambda_param):
     
 def ellipsoidal_function(state, box, lambda_param):
     """
+    Returns ellipsoidal function penalty
     """
     x, y = state[0, 0], state[0, 1]
 
@@ -117,46 +118,9 @@ def ellipsoidal_function(state, box, lambda_param):
 
     return penalty
 
-def get_nonlinear_dynamics(q, qd, params):
-        
-    mb, lb, m1, l1, g = params['mb'], params['lb'], params['m1'], params['l1'], params['g']
-
-    Ib = 1/3*mb*lb**2
-    I1 = 1/3*m1*l1**2
-
-    M = ca.MX.zeros(4, 4)
-    C = ca.MX.zeros(4, 4)
-    tauG = ca.MX.zeros(4, 1)
-    B = ca.MX.zeros(4, 2)
-
-    M = np.array(
-        [[mb + m1, 0., 0., m1*l1*ca.cos(q[3])],
-            [0., mb + m1, 0., m1*l1*ca.sin(q[3])],
-            [0., 0., Ib, 0.],
-            [m1*l1*ca.cos(q[3]), m1*l1*ca.sin(q[3]), 0., I1 + m1*l1**2]])
-
-    C = np.array(
-        [[0., 0., 0., -m1*l1*ca.sin(q[3])*qd[3]],
-            [0., 0., 0., m1*l1*ca.cos(q[3])*qd[3]],
-            [0., 0., 0., 0.],
-            [0., 0., 0., 0.]])
-
-    tauG = np.array(
-        [[0.],
-            [-(m1+mb)*g],
-            [0.],
-            [-m1*l1*g*ca.sin(q[3])]])
-
-    B = np.array(
-        [[-ca.sin(q[2]), -ca.sin(q[2])],
-            [ca.cos(q[2]), ca.cos(q[2])],
-            [-lb, lb],
-            [0., 0.]])
-
-    return (M, C, tauG, B)
-
 def get_linearized_dynamics(x_f, u_f, params):
     """
+    Returns linearized dynamics A, B around fixed points
     """
     # Extract parameters
     mb, lb, m1, l1, g = params['mb'], params['lb'], params['m1'], params['l1'], params['g']
@@ -203,6 +167,9 @@ def get_linearized_dynamics(x_f, u_f, params):
     return A, B
 
 def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
+    """
+    Returns discretized linearized dynamics A, B
+    """
     A_c, B_c = get_linearized_dynamics(x_f.reshape(-1), u_f.reshape(-1), params)
 
     # Identity matrix in CasADi
@@ -253,6 +220,7 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
                             'acceptable_constr_viol_tol': 1e-2
                         }):
     """
+    Solves an NLP optimization problem of trajectory through narrow passage
     """
     # Define parameters
     params = {

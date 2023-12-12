@@ -50,7 +50,6 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory,
     x_min, y_min, x_max, y_max = obstacles.get_world()[0]
     for i in range(N + 1):
         # Extract the position (x, y) from the state
-        # Assuming the first two elements of the state vector are x and y positions
         x_pos = x_vars[i][0]
         y_pos = x_vars[i][1]
 
@@ -80,11 +79,3 @@ def optimize_quadrotor_trajectory(quadrotor_pendulum, N, dt, initial_trajectory,
     optimized_controls = np.array([result.GetSolution(u) for u in u_vars])
 
     return optimized_states, optimized_controls
-
-# Usage example
-# x0 = np.array([initial_state])  # Replace with your initial state
-# xf = np.array([final_state])    # Replace with your final state
-# T = 1.0  # Total time
-# N = 50   # Number of time steps
-# initial_trajectory = (initial_states, initial_controls)  # Replace with your initial trajectory
-# optimized_states, optimized_controls = optimize_quadrotor_trajectory(quadrotor_pendulum, x0, xf, T, N, initial_trajectory)

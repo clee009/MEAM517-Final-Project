@@ -133,7 +133,3 @@ class TrajectoryOptimizer:
         plt.plot(optimized_trajectory['state'][:, 0], optimized_trajectory['state'][:, 1], label='Optimized Trajectory')
         plt.legend()
         plt.show()
-
-# Usage
-# optimizer = TrajectoryOptimizer(quadrotor, obstacles, initial_trajectory, N, goal, max_iter, tol)
-# optimized_trajectory = optimizer.optimize_trajectory()
