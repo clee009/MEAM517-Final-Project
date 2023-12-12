@@ -20,7 +20,6 @@ class SignedDistanceField(Obstacles):
         x, y = state[0, 0], state[0, 1]
         x_min, y_min, x_max, y_max = self.boxes[idx]
 
-        # Using ca.if_else for conditional logic
         bottom_left = ca.sqrt((x_min - x)**2 + (y_min - y)**2)
         top_left = ca.sqrt((x_min - x)**2 + (y - y_max)**2)
         bottom_right = ca.sqrt((x - x_max)**2 + (y_min - y)**2)
@@ -216,36 +215,36 @@ def discrete_time_linearized_dynamics(dt, x_f, u_f, params):
     return A_d, B_d
 
 def get_ends(state, params):
-        """
-        Returns the positions of the ends of the quadrotor (tips of body and pendulum).
+    """
+    Returns the positions of the ends of the quadrotor (tips of body and pendulum).
 
-        OUTPUTS:
-        end_pos - 6 element array, [xr, yr, xl, yl, xm, ym]
-        """
+    OUTPUTS:
+    end_pos - 6 element array, [xr, yr, xl, yl, xm, ym]
+    """
 
-        lb = params['lb']
-        l1 = params['l1']
+    lb = params['lb']
+    l1 = params['l1']
 
-        xb = state[0, 0]
-        yb = state[0, 1]
-        thb = state[0, 2]
-        th1 = state[0, 3]
+    xb = state[0, 0]
+    yb = state[0, 1]
+    thb = state[0, 2]
+    th1 = state[0, 3]
 
-        # Right tip of body/wing
-        xr = xb + lb / 2 * ca.cos(thb)
-        yr = yb + lb / 2 * ca.sin(thb)
+    # Right tip of body/wing
+    xr = xb + lb / 2 * ca.cos(thb)
+    yr = yb + lb / 2 * ca.sin(thb)
 
-        # Left tip of body/wing
-        xl = xb - lb / 2 * ca.cos(thb)
-        yl = yb - lb / 2 * ca.sin(thb)
+    # Left tip of body/wing
+    xl = xb - lb / 2 * ca.cos(thb)
+    yl = yb - lb / 2 * ca.sin(thb)
 
-        # Tip of pendulum
-        xm = xb + l1 * ca.sin(th1)
-        ym = yb - l1 * ca.cos(th1)
+    # Tip of pendulum
+    xm = xb + l1 * ca.sin(th1)
+    ym = yb - l1 * ca.cos(th1)
 
-        end_pos = [xr, yr, xl, yl, xm, ym]
+    end_pos = [xr, yr, xl, yl, xm, ym]
 
-        return end_pos
+    return end_pos
 
 def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_params, 
                         opt_params = {
@@ -391,11 +390,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     for k in range(N-1):
         cost += dist_param * ca.sumsqr(X[k, :2] - X[k+1, :2]) + ca.sumsqr(U[k, :]) + vel_param * ca.sumsqr(X[k, 3:])
         for box in boxes:
-            xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
-            cost += barrier_param * ellipsoidal_function_tips([[xr, yr]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function_tips([[xl, yl]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function_tips([[xm, ym]], box, lambda_param)
-            # cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
+            # xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
+            # cost += barrier_param * ellipsoidal_function_tips([[xr, yr]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function_tips([[xl, yl]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function_tips([[xm, ym]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
 
@@ -403,8 +402,8 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
 
     # Solve the optimization problem
     opts = {
-        'ipopt.max_iter': opt_params['max_iter'],                # Maximum number of iterations
-        'ipopt.acceptable_tol': opt_params['acceptable_tol'],          # Acceptable convergence tolerance
+        'ipopt.max_iter': opt_params['max_iter'],                                     # Maximum number of iterations
+        'ipopt.acceptable_tol': opt_params['acceptable_tol'],                         # Acceptable convergence tolerance
         'ipopt.acceptable_constr_viol_tol': opt_params['acceptable_constr_viol_tol']  # Acceptable constraint violation tolerance
     }
 
