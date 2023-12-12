@@ -5,12 +5,18 @@ import matplotlib.pyplot as plt
 
 class SignedDistanceField(Obstacles):
     def __init__(self, file: str, gamma = 3.6):
+        """
+        Initializes number of boxes and penalty parameter
+        """
         super().__init__(file)
         self.n = len(self.boxes)
         self.gamma = gamma
     
 
     def calc_sdf_single(self, state, idx):
+        """
+        Returns the signed distance to the nearest box obstacle given the state and box
+        """
         x, y = state[0, 0], state[0, 1]
         x_min, y_min, x_max, y_max = self.boxes[idx]
 
@@ -49,6 +55,9 @@ class SignedDistanceField(Obstacles):
         )
 
     def calc_sdf(self, x):
+        """
+        Returns the minimum signed distance among all boxes
+        """
         min_sdf = self.calc_sdf_single(x, 0)
         for i in range(1, self.n):
             min_sdf = ca.fmin(self.calc_sdf_single(x, i), min_sdf)
@@ -56,11 +65,21 @@ class SignedDistanceField(Obstacles):
         return min_sdf
 
 
-    def barrier_func(self, x):
+    def barrier_func_exp(self, x):
+        """
+        Returns the exponential penalty to nearest obstacle
+        """
+        sdf = self.calc_sdf(x)
+        return ca.exp(-self.gamma * sdf)
+    
+    
+    def barrier_func_log(self, x):
+        """
+        Returns the log penalty to nearest obstacle
+        """
         epsilon = 1e-3
         sdf = self.calc_sdf(x)
         barrier_arg = sdf + epsilon
-        # return ca.exp(-self.gamma * sdf)
         return -ca.log(self.gamma * barrier_arg)
     
 def ellipsoidal_function_tips(state, box, lambda_param):
@@ -372,11 +391,11 @@ def optimize_trajectory(quadrotor, obstacles, N, dt, initial_trajectory, tuning_
     for k in range(N-1):
         cost += dist_param * ca.sumsqr(X[k, :2] - X[k+1, :2]) + ca.sumsqr(U[k, :]) + vel_param * ca.sumsqr(X[k, 3:])
         for box in boxes:
-            # xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
-            # cost += barrier_param * ellipsoidal_function_tips([[xr, yr]], box, lambda_param)
-            # cost += barrier_param * ellipsoidal_function_tips([[xl, yl]], box, lambda_param)
-            # cost += barrier_param * ellipsoidal_function_tips([[xm, ym]], box, lambda_param)
-            cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
+            xr, yr, xl, yl, xm, ym = get_ends(X[k,:], params)
+            cost += barrier_param * ellipsoidal_function_tips([[xr, yr]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function_tips([[xl, yl]], box, lambda_param)
+            cost += barrier_param * ellipsoidal_function_tips([[xm, ym]], box, lambda_param)
+            # cost += barrier_param * ellipsoidal_function(X[k, :], box, lambda_param)
     
     cost += goal_param * ca.sumsqr(X[N-1, :] - final_state)
 
