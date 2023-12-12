@@ -1,0 +1,13 @@
+#x_min, y_min, x_max, y_max
+boxes: [
+    [0, 0, 8, 4],   # defines the world boundary
+    [1, 0.5, 3, 1],  # upper-left obstacle
+    [3, 0, 5, 1.5],  # upper-center obstacle
+    [3, 2.1, 5, 4],  # lower-center obstacle
+    [1, 2, 2, 2.5],  # middle-left obstacle
+    [6, 0.5, 7, 2.5],  # upper-right obstacle
+    [0.5, 1.5, 1.5, 2],  # vertical obstacle in the middle-left
+    [7, 0.5, 7.5, 2.1],  # diagonal obstacle in the middle-right
+    [5, 3.5, 6, 4],  # narrow passage to the goal
+    [5, 2.1, 6, 2.5],
+]
