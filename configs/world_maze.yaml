@@ -1,6 +1,11 @@
 #x_min, y_min, x_max, y_max
+<<<<<<< HEAD
 boxes: [
     [0, 0, 8, 4],   # defines the world boundary
+=======
+boundary: [0, 0, 8, 4]  # defines the world boundary
+boxes: [
+>>>>>>> origin/develop/chris
     [1, 0.5, 3, 1],  # upper-left obstacle
     [3, 0, 5, 1.5],  # upper-center obstacle
     [3, 2.1, 5, 4],  # lower-center obstacle

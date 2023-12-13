@@ -9,7 +9,7 @@ from scipy.integrate import ode
 from scipy.integrate import solve_ivp
 from scipy.linalg import expm
 from scipy.linalg import solve_continuous_are
-
+    
 from pydrake.solvers import MathematicalProgram, Solve, OsqpSolver
 import pydrake.symbolic as sym
 

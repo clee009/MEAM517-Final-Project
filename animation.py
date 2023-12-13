@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import rc
 from world import Obstacles
-from quadrotor import QuadrotorPendulum
-import os
+from quadrotor_with_pendulum import QuadrotorPendulum
 
 
 class Animation:
